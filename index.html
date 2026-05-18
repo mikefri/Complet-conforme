@@ -7,929 +7,226 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        :root {
-            --bg:        #0d0f14;
-            --surface:   #161921;
-            --border:    #252836;
-            --border-hi: #353a50;
-            --text:      #e8eaf0;
-            --muted:     #6b7094;
-            --accent:    #4f8ef7;
-            --accent-hi: #7aaaff;
-            --green:     #2dd97a;
-            --amber:     #f5a623;
-            --red:       #f25c5c;
-            --mono:      'JetBrains Mono', monospace;
-            --sans:      'DM Sans', sans-serif;
-            --radius:    12px;
-            --radius-lg: 18px;
-        }
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: var(--sans);
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ─── HEADER ─────────────────────────────────── */
-        header {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            position: sticky; top: 0; z-index: 100;
-        }
-
-        .header-inner {
-            max-width: 560px;
-            margin: 0 auto;
-            display: flex;
-            align-items: stretch;
-            justify-content: space-between;
-        }
-
-        .logo {
-            font-family: var(--mono);
-            font-weight: 800;
-            font-size: .95rem;
-            color: var(--accent);
-            padding: 0 1.25rem;
-            display: flex; align-items: center; gap: .5rem;
-            letter-spacing: .05em;
-        }
-        .logo span { color: var(--muted); font-weight: 400; }
-
-        nav { display: flex; }
-
-        .tab-btn {
-            font-family: var(--sans);
-            font-size: .82rem;
-            font-weight: 700;
-            color: var(--muted);
-            background: none;
-            border: none;
-            border-bottom: 3px solid transparent;
-            padding: 1rem 1.25rem;
-            cursor: pointer;
-            transition: color .15s, border-color .15s;
-            letter-spacing: .02em;
-        }
-        .tab-btn:hover { color: var(--text); }
-        .tab-btn.active {
-            color: var(--accent-hi);
-            border-bottom-color: var(--accent);
-        }
-
-        /* ─── MAIN ────────────────────────────────────── */
-        main {
-            flex: 1;
-            max-width: 560px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        section { display: flex; flex-direction: column; gap: 1rem; }
-        section.hidden { display: none; }
-
-        /* ─── CARDS ───────────────────────────────────── */
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 1.5rem;
-        }
-
-        .card-title {
-            font-family: var(--mono);
-            font-size: .7rem;
-            font-weight: 700;
-            color: var(--muted);
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-        }
-
-        /* ─── SEARCH BAR ──────────────────────────────── */
-        .search-row {
-            display: flex;
-            gap: .75rem;
-        }
-
-        .search-input {
-            flex: 1;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: .9rem 1rem;
-            font-family: var(--mono);
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            transition: border-color .15s, box-shadow .15s;
-            outline: none;
-        }
-        .search-input::placeholder { color: var(--muted); font-weight: 400; letter-spacing: 0; }
-        .search-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(79,142,247,.15);
-        }
-
-        .btn-search {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius);
-            padding: 0 1.25rem;
-            font-weight: 700;
-            font-size: .85rem;
-            cursor: pointer;
-            transition: background .15s, transform .1s;
-            white-space: nowrap;
-        }
-        .btn-search:hover { background: var(--accent-hi); }
-        .btn-search:active { transform: scale(.97); }
-
-        /* ─── STATUS LINE ─────────────────────────────── */
-        .status-line {
-            font-size: .82rem;
-            font-weight: 600;
-            color: var(--red);
-            margin-top: .5rem;
-            min-height: 1.2em;
-        }
-
-        /* ─── KIT CARD ────────────────────────────────── */
-        .kit-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-        .kit-id-badge {
-            font-family: var(--mono);
-            font-size: .7rem;
-            font-weight: 800;
-            background: rgba(79,142,247,.12);
-            color: var(--accent-hi);
-            border: 1px solid rgba(79,142,247,.3);
-            border-radius: 6px;
-            padding: .25rem .6rem;
-            letter-spacing: .08em;
-            white-space: nowrap;
-        }
-        .kit-name {
-            font-size: 1.3rem;
-            font-weight: 700;
-            line-height: 1.3;
-            margin-top: .4rem;
-        }
-        .kit-location {
-            font-size: .8rem;
-            color: var(--muted);
-            margin-top: .3rem;
-        }
-        .kit-location strong { color: var(--text); }
-
-        /* ─── COMPOSANTS LIST ─────────────────────────── */
-        .comp-list { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.25rem; }
-
-        .comp-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: .75rem;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: .85rem 1rem;
-            cursor: pointer;
-            transition: border-color .15s, background .15s;
-            user-select: none;
-        }
-        .comp-item:hover { border-color: var(--border-hi); }
-        .comp-item.checked {
-            border-color: rgba(45,217,122,.35);
-            background: rgba(45,217,122,.05);
-        }
-
-        .comp-left { display: flex; align-items: center; gap: .75rem; }
-
-        .comp-checkbox-visual {
-            width: 20px; height: 20px;
-            border: 2px solid var(--border-hi);
-            border-radius: 6px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-            transition: background .15s, border-color .15s;
-        }
-        .comp-item.checked .comp-checkbox-visual {
-            background: var(--green);
-            border-color: var(--green);
-        }
-        .comp-checkbox-visual svg {
-            opacity: 0; transform: scale(.5);
-            transition: opacity .15s, transform .15s;
-        }
-        .comp-item.checked .comp-checkbox-visual svg { opacity: 1; transform: scale(1); }
-
-        .comp-name {
-            font-size: .9rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-        .comp-item.checked .comp-name { color: var(--muted); text-decoration: line-through; }
-
-        .comp-qty {
-            font-family: var(--mono);
-            font-size: .75rem;
-            font-weight: 700;
-            background: var(--border);
-            color: var(--muted);
-            padding: .2rem .55rem;
-            border-radius: 99px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        /* ─── ACTION BUTTONS ──────────────────────────── */
-        .btn-actions { display: flex; flex-direction: column; gap: .6rem; }
-
-        .btn-action {
-            width: 100%;
-            border: none;
-            border-radius: var(--radius);
-            padding: 1rem;
-            font-family: var(--sans);
-            font-size: .9rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: filter .15s, transform .1s;
-            display: flex; align-items: center; justify-content: center; gap: .5rem;
-        }
-        .btn-action:active { transform: scale(.98); }
-        .btn-conforme { background: var(--green); color: #0d1a11; }
-        .btn-conforme:hover { filter: brightness(1.1); }
-        .btn-incomplet { background: rgba(245,166,35,.15); color: var(--amber); border: 1px solid rgba(245,166,35,.3); }
-        .btn-incomplet:hover { background: rgba(245,166,35,.22); }
-
-        /* ─── PROGRESS BAR ────────────────────────────── */
-        .progress-wrap {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 99px;
-            height: 8px;
-            overflow: hidden;
-            margin-top: .75rem;
-        }
-        .progress-bar {
-            height: 100%;
-            background: var(--accent);
-            border-radius: 99px;
-            transition: width .3s ease;
-            width: 0%;
-        }
-        .progress-label {
-            font-family: var(--mono);
-            font-size: .72rem;
-            color: var(--muted);
-            margin-top: .4rem;
-        }
-
-        /* ─── LOADING ─────────────────────────────────── */
-        .loading-wrap {
-            display: flex; align-items: center; justify-content: center;
-            gap: .75rem;
-            padding: 2.5rem;
-            color: var(--muted);
-            font-size: .85rem;
-        }
-        .spinner {
-            width: 20px; height: 20px;
-            border: 2px solid var(--border-hi);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin .7s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ─── ADMIN DROP ZONE ─────────────────────────── */
-        .drop-zone {
-            border: 2px dashed var(--border-hi);
-            border-radius: var(--radius-lg);
-            padding: 2.5rem 1.5rem;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color .2s, background .2s;
-            position: relative;
-        }
-        .drop-zone.dragover {
-            border-color: var(--accent);
-            background: rgba(79,142,247,.06);
-        }
-        .drop-zone input[type="file"] {
-            position: absolute; inset: 0; opacity: 0; cursor: pointer;
-        }
-        .drop-icon {
-            font-size: 2.5rem;
-            margin-bottom: .75rem;
-            display: block;
-        }
-        .drop-title {
-            font-weight: 700;
-            font-size: .95rem;
-            margin-bottom: .3rem;
-        }
-        .drop-sub {
-            font-size: .78rem;
-            color: var(--muted);
-        }
-
-        /* ─── ADMIN STATUS ────────────────────────────── */
-        .admin-status {
-            padding: 1rem 1.25rem;
-            border-radius: var(--radius);
-            font-size: .85rem;
-            font-weight: 600;
-            display: none;
-        }
-        .admin-status.info    { background: rgba(79,142,247,.1);  color: var(--accent-hi); border: 1px solid rgba(79,142,247,.2); display: block; }
-        .admin-status.success { background: rgba(45,217,122,.1);  color: var(--green);     border: 1px solid rgba(45,217,122,.2); display: block; }
-        .admin-status.error   { background: rgba(242,92,92,.1);   color: var(--red);       border: 1px solid rgba(242,92,92,.2);  display: block; }
-
-        /* ─── OFFLINE BANNER ──────────────────────────── */
-        .offline-banner {
-            background: rgba(245,166,35,.1);
-            border: 1px solid rgba(245,166,35,.3);
-            color: var(--amber);
-            font-size: .78rem;
-            font-weight: 600;
-            padding: .6rem 1rem;
-            border-radius: var(--radius);
-            display: none;
-            align-items: center; gap: .5rem;
-        }
-        .offline-banner.visible { display: flex; }
-
-        /* ─── ANIMATIONS ──────────────────────────────── */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .anim-in { animation: fadeUp .2s ease both; }
-
-        /* ─── ADMIN AUTH GATE ─────────────────────────── */
-        .auth-gate {
-            display: flex; flex-direction: column; gap: 1rem;
-            align-items: center; text-align: center;
-            padding: 2rem 1rem;
-        }
-        .auth-icon { font-size: 3rem; }
-        .auth-title { font-weight: 700; font-size: 1.1rem; }
-        .auth-sub { font-size: .82rem; color: var(--muted); max-width: 280px; }
-
-        .pin-row { display: flex; gap: .5rem; margin: .5rem 0; }
-        .pin-input {
-            width: 2.8rem; height: 3.2rem;
-            text-align: center;
-            font-family: var(--mono);
-            font-size: 1.3rem;
-            font-weight: 800;
-            background: var(--bg);
-            border: 1px solid var(--border-hi);
-            border-radius: var(--radius);
-            color: var(--text);
-            outline: none;
-            transition: border-color .15s, box-shadow .15s;
-        }
-        .pin-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(79,142,247,.15);
-        }
-        .pin-error { color: var(--red); font-size: .8rem; font-weight: 600; min-height: 1.2em; }
-
-        .btn-pin-validate {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius);
-            padding: .8rem 2rem;
-            font-weight: 700;
-            font-size: .9rem;
-            cursor: pointer;
-            transition: background .15s;
-        }
-        .btn-pin-validate:hover { background: var(--accent-hi); }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- HEADER -->
-    <header>
-        <div class="header-inner">
-            <div class="logo">LOGI<span>KIT</span> PRO</div>
-            <nav>
-                <button class="tab-btn active" id="tab-terrain">📱 Terrain</button>
-                <button class="tab-btn" id="tab-admin">⚙️ Admin</button>
-            </nav>
+    <!-- ════════════════════════════════════════════════ -->
+    <!--              PAGE DE CONNEXION                   -->
+    <!-- ════════════════════════════════════════════════ -->
+    <div id="login-page" style="display:none;">
+        <div class="login-card">
+
+            <div class="login-logo">LOGI<span>KIT</span> PRO</div>
+
+            <div class="login-title">
+                <h2>Connexion</h2>
+                <p>Accédez à votre espace de gestion des kits</p>
+            </div>
+
+            <div class="field-group">
+                <label for="login-email">Adresse e-mail</label>
+                <input
+                    type="email"
+                    id="login-email"
+                    class="field-input"
+                    placeholder="vous@exemple.com"
+                    autocomplete="email"
+                    spellcheck="false"
+                >
+            </div>
+
+            <div class="field-group">
+                <label for="login-pwd">Mot de passe</label>
+                <input
+                    type="password"
+                    id="login-pwd"
+                    class="field-input"
+                    placeholder="••••••••"
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <div class="login-error" id="login-error"></div>
+
+            <button class="btn-login" id="btn-login">Se connecter →</button>
+
+            <hr class="login-divider">
+            <p class="login-footer">Connexion sécurisée via Firebase Authentication</p>
+
         </div>
-    </header>
+    </div>
 
-    <main>
+    <!-- ════════════════════════════════════════════════ -->
+    <!--          APPLICATION (visible après auth)        -->
+    <!-- ════════════════════════════════════════════════ -->
+    <div id="app">
 
-        <!-- ════════════════════════════════════════════ -->
-        <!--              SECTION TERRAIN                 -->
-        <!-- ════════════════════════════════════════════ -->
-        <section id="sec-terrain">
-
-            <!-- Bannière offline -->
-            <div class="offline-banner" id="offline-banner">
-                ⚠️ Mode hors-ligne — les modifications seront synchronisées au retour du réseau.
-            </div>
-
-            <!-- Barre de recherche -->
-            <div class="card">
-                <p class="card-title">Scanner ou saisir l'emplacement</p>
-                <div class="search-row">
-                    <input type="text" id="input-emplacement" class="search-input" placeholder="Ex: A-01-02" autocomplete="off" spellcheck="false">
-                    <button class="btn-search" id="btn-verifier">Vérifier</button>
-                </div>
-                <p class="status-line" id="search-status"></p>
-            </div>
-
-            <!-- Chargement -->
-            <div class="card hidden anim-in" id="loading-card">
-                <div class="loading-wrap">
-                    <div class="spinner"></div>
-                    <span>Recherche du kit…</span>
-                </div>
-            </div>
-
-            <!-- Fiche Kit -->
-            <div class="card hidden anim-in" id="kit-card">
-                <!-- En-tête kit -->
-                <div class="kit-header">
-                    <div>
-                        <span class="kit-id-badge" id="kit-badge">—</span>
-                        <h2 class="kit-name" id="kit-nom">—</h2>
-                        <p class="kit-location">📍 Emplacement : <strong id="kit-emp">—</strong></p>
-                    </div>
-                </div>
-
-                <!-- Composants -->
-                <p class="card-title">Composition théorique à valider</p>
-                <div class="comp-list" id="comp-list"></div>
-
-                <!-- Actions -->
-                <div class="btn-actions">
-                    <button class="btn-action btn-conforme" id="btn-conforme">
-                        ✅ Kit complet & conforme
+        <!-- HEADER -->
+        <header>
+            <div class="header-inner">
+                <div class="logo">LOGI<span>KIT</span> PRO</div>
+                <nav>
+                    <button class="tab-btn active" id="tab-terrain">📱 Terrain</button>
+                    <button class="tab-btn" id="tab-admin">⚙️ Admin</button>
+                    <button class="btn-logout" id="btn-logout" title="Se déconnecter">
+                        Déconnexion
                     </button>
-                    <button class="btn-action btn-incomplet" id="btn-incomplet">
-                        ⚠️ Signaler des éléments manquants
-                    </button>
-                </div>
+                </nav>
             </div>
+        </header>
 
-        </section>
+        <main>
 
-        <!-- ════════════════════════════════════════════ -->
-        <!--               SECTION ADMIN                  -->
-        <!-- ════════════════════════════════════════════ -->
-        <section id="sec-admin" class="hidden">
+            <!-- ════════════════════════════════════════ -->
+            <!--           SECTION TERRAIN               -->
+            <!-- ════════════════════════════════════════ -->
+            <section id="sec-terrain">
 
-            <!-- Auth Gate (PIN) -->
-            <div class="card" id="admin-auth">
-                <div class="auth-gate">
-                    <span class="auth-icon">🔐</span>
-                    <p class="auth-title">Accès administrateur</p>
-                    <p class="auth-sub">Entrez votre code PIN à 4 chiffres pour déverrouiller les outils d'import.</p>
-                    <div class="pin-row" id="pin-row">
-                        <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                        <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                        <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                        <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                    </div>
-                    <p class="pin-error" id="pin-error"></p>
-                    <button class="btn-pin-validate" id="btn-pin">Déverrouiller</button>
+                <!-- Bannière offline -->
+                <div class="offline-banner" id="offline-banner">
+                    ⚠️ Mode hors-ligne — les modifications seront synchronisées au retour du réseau.
                 </div>
-            </div>
 
-            <!-- Interface admin réelle (cachée jusqu'à auth) -->
-            <div id="admin-content" class="hidden" style="display:flex;flex-direction:column;gap:1rem;">
-
+                <!-- Barre de recherche -->
                 <div class="card">
-                    <p class="card-title">Import de données — Fichier maître</p>
-                    <p style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">
-                        Déposez un fichier global (.xlsx ou .csv). Les kits déjà présents dans Firebase 
-                        <strong style="color:var(--text)">ne seront pas écrasés</strong>.
-                    </p>
-
-                    <!-- Drop Zone -->
-                    <div class="drop-zone" id="drop-zone">
-                        <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
-                        <span class="drop-icon">📂</span>
-                        <p class="drop-title">Glisser-déposer ou cliquer pour parcourir</p>
-                        <p class="drop-sub">Fichiers .xlsx ou .csv uniquement</p>
+                    <p class="card-title">Scanner ou saisir l'emplacement</p>
+                    <div class="search-row">
+                        <input
+                            type="text"
+                            id="input-emplacement"
+                            class="search-input"
+                            placeholder="Ex: A-01-02"
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                        <button class="btn-search" id="btn-verifier">Vérifier</button>
                     </div>
-
-                    <!-- Progression -->
-                    <div id="progress-area" class="hidden" style="margin-top:1rem;">
-                        <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
-                        <p class="progress-label" id="progress-label">0 / 0 kits traités…</p>
-                    </div>
-
-                    <!-- Statut -->
-                    <div class="admin-status" id="admin-status"></div>
+                    <p class="status-line" id="search-status"></p>
                 </div>
 
-                <!-- Format attendu -->
-                <div class="card">
-                    <p class="card-title">Format de fichier attendu</p>
-                    <div style="overflow-x:auto;">
-                        <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
-                            <thead>
-                                <tr style="border-bottom:1px solid var(--border);">
-                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">id_kit</th>
-                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">nom_kit</th>
-                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">emplacement</th>
-                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">composant</th>
-                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">quantite</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr style="border-bottom:1px solid var(--border);">
-                                    <td style="padding:.5rem .75rem;font-family:var(--mono);color:var(--accent-hi);">KIT-001</td>
-                                    <td style="padding:.5rem .75rem;">Kit Sécurité</td>
-                                    <td style="padding:.5rem .75rem;">A-01-02</td>
-                                    <td style="padding:.5rem .75rem;">Extincteur CO₂</td>
-                                    <td style="padding:.5rem .75rem;text-align:center;">2</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:.5rem .75rem;font-family:var(--mono);color:var(--accent-hi);">KIT-001</td>
-                                    <td style="padding:.5rem .75rem;">Kit Sécurité</td>
-                                    <td style="padding:.5rem .75rem;">A-01-02</td>
-                                    <td style="padding:.5rem .75rem;">Trousse premiers secours</td>
-                                    <td style="padding:.5rem .75rem;text-align:center;">1</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- Chargement -->
+                <div class="card hidden anim-in" id="loading-card">
+                    <div class="loading-wrap">
+                        <div class="spinner"></div>
+                        <span>Recherche du kit…</span>
                     </div>
                 </div>
 
-            </div>
-        </section>
-
-    </main>
-
-    <script type="module">
-        import { initializeApp }            from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, enableIndexedDbPersistence,
-                 doc, setDoc, getDoc, getDocs,
-                 collection, updateDoc }     from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // ─── FIREBASE CONFIG ──────────────────────────────────────────────────
-        // ⚠️  Remplacez avec vos vraies coordonnées Firebase
-        const firebaseConfig = {
-            apiKey:            "VOTRE_API_KEY",
-            authDomain:        "VOTRE_PROJECT_ID.firebaseapp.com",
-            projectId:         "VOTRE_PROJECT_ID",
-            storageBucket:     "VOTRE_PROJECT_ID.appspot.com",
-            messagingSenderId: "VOTRE_SENDER_ID",
-            appId:             "VOTRE_APP_ID"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db  = getFirestore(app);
-
-        // ─── PERSISTENCE OFFLINE ──────────────────────────────────────────────
-        try {
-            await enableIndexedDbPersistence(db);
-        } catch (err) {
-            // multi-onglets ou navigateur incompatible : non-bloquant
-            console.warn("[Offline] Persistance indisponible :", err.code);
-        }
-
-        // ─── ADMIN PIN ───────────────────────────────────────────────────────
-        // ⚠️  Changez ce PIN ou remplacez par une vraie auth Firebase
-        const ADMIN_PIN = "1234";
-
-        // ─── ÉTAT GLOBAL ─────────────────────────────────────────────────────
-        let currentEmpId = "";
-        let currentKitId = "";
-
-        // ─── REFS DOM ────────────────────────────────────────────────────────
-        const $ = id => document.getElementById(id);
-        const tabTerrain   = $('tab-terrain');
-        const tabAdmin     = $('tab-admin');
-        const secTerrain   = $('sec-terrain');
-        const secAdmin     = $('sec-admin');
-        const offlineBanner= $('offline-banner');
-        const inputEmp     = $('input-emplacement');
-        const btnVerifier  = $('btn-verifier');
-        const searchStatus = $('search-status');
-        const loadingCard  = $('loading-card');
-        const kitCard      = $('kit-card');
-        const compList     = $('comp-list');
-
-        // ─── DÉTECTION OFFLINE ────────────────────────────────────────────────
-        function updateOnlineBanner() {
-            offlineBanner.classList.toggle('visible', !navigator.onLine);
-        }
-        window.addEventListener('online',  updateOnlineBanner);
-        window.addEventListener('offline', updateOnlineBanner);
-        updateOnlineBanner();
-
-        // ─── NAVIGATION ONGLETS ───────────────────────────────────────────────
-        tabTerrain.addEventListener('click', () => showTab('terrain'));
-        tabAdmin.addEventListener('click',   () => showTab('admin'));
-
-        function showTab(tab) {
-            const isTerrain = tab === 'terrain';
-            tabTerrain.classList.toggle('active', isTerrain);
-            tabAdmin.classList.toggle('active', !isTerrain);
-            secTerrain.classList.toggle('hidden', !isTerrain);
-            secAdmin.classList.toggle('hidden', isTerrain);
-        }
-
-        // ─── LOGIQUE TERRAIN ─────────────────────────────────────────────────
-        btnVerifier.addEventListener('click', chargerEmplacement);
-        inputEmp.addEventListener('keydown', e => { if (e.key === 'Enter') chargerEmplacement(); });
-
-        async function chargerEmplacement() {
-            const empId = inputEmp.value.trim().toUpperCase();
-            if (!empId) return;
-
-            // Reset UI
-            kitCard.classList.add('hidden');
-            searchStatus.textContent = '';
-            loadingCard.classList.remove('hidden');
-            btnVerifier.disabled = true;
-
-            try {
-                const empSnap = await getDoc(doc(db, "emplacements", empId));
-
-                if (!empSnap.exists() || !empSnap.data().id_kit_stocke) {
-                    throw new Error(`Emplacement « ${empId} » vide ou inconnu.`);
-                }
-
-                currentEmpId = empId;
-                currentKitId = empSnap.data().id_kit_stocke;
-
-                const kitSnap = await getDoc(doc(db, "nomenclature_kits", currentKitId));
-                if (!kitSnap.exists()) {
-                    throw new Error(`Fiche technique du kit « ${currentKitId} » introuvable.`);
-                }
-
-                afficherKit(currentKitId, kitSnap.data(), empId);
-
-            } catch (err) {
-                searchStatus.textContent = '⚠️ ' + err.message;
-            } finally {
-                loadingCard.classList.add('hidden');
-                btnVerifier.disabled = false;
-            }
-        }
-
-        function afficherKit(idKit, data, empId) {
-            $('kit-badge').textContent = idKit;
-            $('kit-nom').textContent   = data.nom_du_kit;
-            $('kit-emp').textContent   = empId;
-
-            compList.innerHTML = '';
-            data.composants.forEach((comp, idx) => {
-                const item = document.createElement('div');
-                item.className = 'comp-item';
-                item.dataset.idx = idx;
-                item.innerHTML = `
-                    <div class="comp-left">
-                        <div class="comp-checkbox-visual">
-                            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
+                <!-- Fiche Kit -->
+                <div class="card hidden anim-in" id="kit-card">
+                    <div class="kit-header">
+                        <div>
+                            <span class="kit-id-badge" id="kit-badge">—</span>
+                            <h2 class="kit-name" id="kit-nom">—</h2>
+                            <p class="kit-location">📍 Emplacement : <strong id="kit-emp">—</strong></p>
                         </div>
-                        <span class="comp-name">${comp.nom}</span>
                     </div>
-                    <span class="comp-qty">× ${comp.quantite_requise}</span>
-                `;
-                item.addEventListener('click', () => item.classList.toggle('checked'));
-                compList.appendChild(item);
-            });
 
-            kitCard.classList.remove('hidden');
-        }
+                    <p class="card-title">Composition théorique à valider</p>
+                    <div class="comp-list" id="comp-list"></div>
 
-        // ─── ACTIONS VALIDATION ───────────────────────────────────────────────
-        $('btn-conforme').addEventListener('click', () => valider("Conforme"));
-        $('btn-incomplet').addEventListener('click', () => valider("Incomplet"));
+                    <div class="btn-actions">
+                        <button class="btn-action btn-conforme" id="btn-conforme">
+                            ✅ Kit complet &amp; conforme
+                        </button>
+                        <button class="btn-action btn-incomplet" id="btn-incomplet">
+                            ⚠️ Signaler des éléments manquants
+                        </button>
+                    </div>
+                </div>
 
-        async function valider(statut) {
-            if (!currentEmpId) return;
+            </section>
 
-            if (statut === "Conforme") {
-                const items = compList.querySelectorAll('.comp-item');
-                const toutCoche = [...items].every(i => i.classList.contains('checked'));
-                if (!toutCoche && !confirm("Certains composants ne sont pas cochés. Valider quand même comme conforme ?")) return;
-            }
+            <!-- ════════════════════════════════════════ -->
+            <!--            SECTION ADMIN                 -->
+            <!-- ════════════════════════════════════════ -->
+            <section id="sec-admin" class="hidden">
 
-            try {
-                await updateDoc(doc(db, "emplacements", currentEmpId), {
-                    statut_conformite:    statut,
-                    derniere_verification: new Date().toISOString()
-                });
+                <!-- Auth Gate (PIN) -->
+                <div class="card" id="admin-auth">
+                    <div class="auth-gate">
+                        <span class="auth-icon">🔐</span>
+                        <p class="auth-title">Accès administrateur</p>
+                        <p class="auth-sub">Entrez votre code PIN à 4 chiffres pour déverrouiller les outils d'import.</p>
+                        <div class="pin-row" id="pin-row">
+                            <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                            <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                            <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                            <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                        </div>
+                        <p class="pin-error" id="pin-error"></p>
+                        <button class="btn-pin-validate" id="btn-pin">Déverrouiller</button>
+                    </div>
+                </div>
 
-                alert(`✅ Statut « ${statut} » enregistré.`);
+                <!-- Interface admin réelle (cachée jusqu'à auth PIN) -->
+                <div id="admin-content" class="hidden" style="display:flex;flex-direction:column;gap:1rem;">
 
-                // Reset
-                kitCard.classList.add('hidden');
-                inputEmp.value = '';
-                searchStatus.textContent = '';
-                currentEmpId = '';
-                currentKitId = '';
-                inputEmp.focus();
+                    <div class="card">
+                        <p class="card-title">Import de données — Fichier maître</p>
+                        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">
+                            Déposez un fichier global (.xlsx ou .csv). Les kits déjà présents dans Firebase
+                            <strong style="color:var(--text)">ne seront pas écrasés</strong>.
+                        </p>
 
-            } catch (err) {
-                alert('Erreur d\'enregistrement : ' + err.message);
-            }
-        }
+                        <div class="drop-zone" id="drop-zone">
+                            <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
+                            <span class="drop-icon">📂</span>
+                            <p class="drop-title">Glisser-déposer ou cliquer pour parcourir</p>
+                            <p class="drop-sub">Fichiers .xlsx ou .csv uniquement</p>
+                        </div>
 
-        // ─── LOGIQUE ADMIN — AUTH PIN ─────────────────────────────────────────
-        const pinInputs    = document.querySelectorAll('.pin-input');
-        const pinError     = $('pin-error');
-        const adminAuth    = $('admin-auth');
-        const adminContent = $('admin-content');
+                        <div id="progress-area" class="hidden" style="margin-top:1rem;">
+                            <div class="progress-wrap">
+                                <div class="progress-bar" id="progress-bar"></div>
+                            </div>
+                            <p class="progress-label" id="progress-label">0 / 0 kits traités…</p>
+                        </div>
 
-        // Navigation auto entre champs PIN
-        pinInputs.forEach((input, i) => {
-            input.addEventListener('input', () => {
-                input.value = input.value.replace(/\D/g, '').slice(0, 1);
-                if (input.value && i < pinInputs.length - 1) pinInputs[i + 1].focus();
-            });
-            input.addEventListener('keydown', e => {
-                if (e.key === 'Backspace' && !input.value && i > 0) pinInputs[i - 1].focus();
-            });
-        });
+                        <div class="admin-status" id="admin-status"></div>
+                    </div>
 
-        $('btn-pin').addEventListener('click', () => {
-            const saisi = [...pinInputs].map(i => i.value).join('');
-            if (saisi === ADMIN_PIN) {
-                adminAuth.classList.add('hidden');
-                adminContent.classList.remove('hidden');
-                adminContent.style.display = 'flex';
-                pinError.textContent = '';
-            } else {
-                pinError.textContent = 'Code incorrect. Réessayez.';
-                pinInputs.forEach(i => i.value = '');
-                pinInputs[0].focus();
-            }
-        });
+                    <!-- Format attendu -->
+                    <div class="card">
+                        <p class="card-title">Format de fichier attendu</p>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+                                <thead>
+                                    <tr style="border-bottom:1px solid var(--border);">
+                                        <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">id_kit</th>
+                                        <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">nom_kit</th>
+                                        <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">emplacement</th>
+                                        <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">composant</th>
+                                        <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">quantite</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border);">
+                                        <td style="padding:.5rem .75rem;font-family:var(--mono);color:var(--accent-hi);">KIT-001</td>
+                                        <td style="padding:.5rem .75rem;">Kit Sécurité</td>
+                                        <td style="padding:.5rem .75rem;">A-01-02</td>
+                                        <td style="padding:.5rem .75rem;">Extincteur CO₂</td>
+                                        <td style="padding:.5rem .75rem;text-align:center;">2</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:.5rem .75rem;font-family:var(--mono);color:var(--accent-hi);">KIT-001</td>
+                                        <td style="padding:.5rem .75rem;">Kit Sécurité</td>
+                                        <td style="padding:.5rem .75rem;">A-01-02</td>
+                                        <td style="padding:.5rem .75rem;">Trousse premiers secours</td>
+                                        <td style="padding:.5rem .75rem;text-align:center;">1</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
-        // ─── LOGIQUE ADMIN — IMPORT EXCEL ─────────────────────────────────────
-        const dropZone   = $('drop-zone');
-        const fileInput  = $('file-input');
-        const adminStatus= $('admin-status');
-        const progressArea = $('progress-area');
-        const progressBar  = $('progress-bar');
-        const progressLabel= $('progress-label');
+                </div>
+            </section>
 
-        // Drag & Drop (vraiment branché cette fois)
-        dropZone.addEventListener('dragover', e => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-        dropZone.addEventListener('drop', e => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            const file = e.dataTransfer?.files?.[0];
-            if (file) traiterFichier(file);
-        });
-        fileInput.addEventListener('change', e => {
-            const file = e.target.files?.[0];
-            if (file) traiterFichier(file);
-        });
+        </main>
+    </div>
 
-        function setStatus(msg, type = 'info') {
-            adminStatus.textContent = msg;
-            adminStatus.className = `admin-status ${type}`;
-        }
-
-        async function traiterFichier(file) {
-            const ext = file.name.split('.').pop().toLowerCase();
-            if (!['xlsx', 'xls', 'csv'].includes(ext)) {
-                setStatus('Format invalide. Utilisez .xlsx ou .csv uniquement.', 'error');
-                return;
-            }
-
-            progressArea.classList.remove('hidden');
-            progressBar.style.width = '0%';
-            progressLabel.textContent = 'Lecture du fichier…';
-            setStatus('Analyse du fichier en cours…', 'info');
-
-            const reader = new FileReader();
-            reader.readAsArrayBuffer(file);
-
-            reader.onerror = () => setStatus('Impossible de lire le fichier.', 'error');
-
-            reader.onload = async e => {
-                try {
-                    // Parse Excel / CSV
-                    const wb     = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-                    const sheet  = wb.Sheets[wb.SheetNames[0]];
-                    const lignes = XLSX.utils.sheet_to_json(sheet);
-
-                    if (!lignes.length) throw new Error("Aucune donnée exploitable dans le fichier.");
-
-                    // Récupération des kits existants (anti-écrasement)
-                    setStatus('Lecture des kits existants sur Firebase…', 'info');
-                    const snap = await getDocs(collection(db, "nomenclature_kits"));
-                    const kitsExistants = new Set(snap.docs.map(d => d.id));
-
-                    // Regroupement par id_kit
-                    const kitsIndex = {};
-                    lignes.forEach(l => {
-                        const id = String(l.id_kit || '').trim();
-                        if (!id) return;
-                        if (!kitsIndex[id]) {
-                            kitsIndex[id] = {
-                                nom_du_kit:             String(l.nom_kit || 'Kit sans nom').trim(),
-                                emplacement_theorique:  String(l.emplacement || '').trim() || 'Non assigné',
-                                composants: []
-                            };
-                        }
-                        const nomComp = String(l.composant || '').trim();
-                        if (nomComp) {
-                            kitsIndex[id].composants.push({
-                                nom:               nomComp,
-                                quantite_requise: Number(l.quantite) || 1
-                            });
-                        }
-                    });
-
-                    const nouveauxIds = Object.keys(kitsIndex).filter(id => !kitsExistants.has(id));
-                    const ignores     = Object.keys(kitsIndex).length - nouveauxIds.length;
-                    const total       = nouveauxIds.length;
-
-                    if (!total) {
-                        progressArea.classList.add('hidden');
-                        setStatus(`Rien à importer : les ${ignores} kit(s) du fichier existent déjà.`, 'info');
-                        return;
-                    }
-
-                    // Écriture progressive avec barre de progression
-                    let ecrits = 0;
-                    for (const idKit of nouveauxIds) {
-                        const data = kitsIndex[idKit];
-
-                        // Fiche nomenclature
-                        await setDoc(doc(db, "nomenclature_kits", idKit), data);
-
-                        // Emplacement associé
-                        if (data.emplacement_theorique !== 'Non assigné') {
-                            await setDoc(
-                                doc(db, "emplacements", data.emplacement_theorique),
-                                {
-                                    id_kit_stocke:        idKit,
-                                    statut_conformite:    "Non vérifié",
-                                    derniere_mise_a_jour: new Date().toISOString()
-                                },
-                                { merge: true }
-                            );
-                        }
-
-                        ecrits++;
-                        const pct = Math.round((ecrits / total) * 100);
-                        progressBar.style.width = pct + '%';
-                        progressLabel.textContent = `${ecrits} / ${total} kits traités…`;
-                        setStatus(`Import en cours… ${pct}%`, 'info');
-                    }
-
-                    progressBar.style.width = '100%';
-                    setStatus(
-                        `✅ Import terminé. ${ecrits} kit(s) ajouté(s)${ignores ? `, ${ignores} ignoré(s) car déjà présent(s)` : ''}.`,
-                        'success'
-                    );
-
-                } catch (err) {
-                    console.error(err);
-                    setStatus('❌ Échec de l\'import : ' + err.message, 'error');
-                } finally {
-                    fileInput.value = ''; // reset pour re-sélection du même fichier
-                }
-            };
-        }
-    </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
