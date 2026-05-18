@@ -3,44 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Importateur de Kits - Entrepôt</title>
-    <!-- Tailwind CSS pour un design propre et moderne -->
+    <title>Gestion & Contrôle des Kits - Entrepôt</title>
+    <!-- Tailwind CSS pour une interface moderne et adaptative -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Librairie XLSX pour lire les fichiers Excel/CSV directement dans le navigateur -->
+    <!-- Librairie XLSX pour traiter les fichiers Excel/CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-6">
+<body class="bg-gray-100 min-h-screen font-sans antialiased text-gray-800 flex flex-col">
 
-    <div class="bg-white p-8 rounded-xl shadow-md max-w-xl w-full">
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">Alimentation des Kits & Emplacements</h1>
-        <p class="text-gray-600 text-sm mb-6">
-            Sélectionnez votre fichier Excel (.xlsx ou .csv). <br>
-            <span class="font-semibold text-blue-600">Sécurité activée :</span> L'outil ignore les kits déjà existants pour protéger vos quotas Firebase gratuits.
-        </p>
-
-        <!-- Zone de dépôt / Sélection du fichier -->
-        <div class="border-4 border-dashed border-gray-200 rounded-lg p-8 text-center hover:border-blue-500 transition cursor-pointer" id="drop-zone">
-            <input type="file" id="file-input" accept=".xlsx, .xls, .csv" class="hidden">
-            <label for="file-input" class="cursor-pointer">
-                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                    <path d="M28 8H12a4 4 0 00-4 4v28a4 4 0 004 4h24a4 4 0 004-4V20L28 8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <p class="mt-1 text-sm text-gray-600 font-semibold">Cliquez pour charger ou glissez le fichier ici</p>
-                <p class="text-xs text-gray-500">XLSX, XLS ou CSV uniquement</p>
-            </label>
+    <!-- BARRE DE NAVIGATION (ONGLERS) -->
+    <header class="bg-blue-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center px-4">
+            <h1 class="text-lg font-bold tracking-tight py-4">LogiKit Pro</h1>
+            <nav class="flex h-full">
+                <button id="tab-btn-controle" class="px-4 py-4 font-semibold border-b-4 border-white bg-blue-700 transition">
+                    📱 Terrain (Contrôle)
+                </button>
+                <button id="tab-btn-admin" class="px-4 py-4 font-semibold border-b-4 border-transparent hover:bg-blue-500 transition">
+                    ⚙️ Admin (Import)
+                </button>
+            </nav>
         </div>
+    </header>
 
-        <!-- Zone d'affichage du Statut (Succès / Erreur / Chargement) -->
-        <div id="status" class="mt-4 text-sm font-medium hidden p-3 rounded"></div>
-    </div>
+    <!-- CONTENEUR PRINCIPAL -->
+    <main class="flex-grow max-w-xl w-full mx-auto p-4 pb-12">
 
-    <!-- Logique Firebase (Version Web v10) -->
+        <!-- ========================================== -->
+        <!-- SECTION 1 : TERRAIN / CONTRÔLE (PAR DÉFAUT) -->
+        <!-- ========================================== -->
+        <section id="section-controle" class="space-y-4">
+            
+            <!-- Recherche d'emplacement -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <label for="search-emplacement" class="block text-sm font-bold text-gray-600 mb-2">Scanner ou Entrer l'Emplacement :</label>
+                <div class="flex gap-2">
+                    <input type="text" id="search-emplacement" placeholder="Ex: A-01-02" class="border border-gray-300 rounded-xl p-3.5 uppercase flex-grow font-bold tracking-wider text-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                    <button id="btn-rechercher" class="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition">Vérifier</button>
+                </div>
+                <div id="search-status" class="mt-2 text-sm font-semibold text-red-500 hidden"></div>
+            </div>
+
+            <!-- Chargement (Squelette visuel) -->
+            <div id="loading" class="text-center py-12 text-gray-400 font-medium hidden">
+                <span class="inline-block animate-bounce mr-2">📦</span> Recherche du kit en cours...
+            </div>
+
+            <!-- Fiche descriptive du Kit trouvé -->
+            <div id="kit-card" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hidden">
+                <div class="border-b border-gray-100 pb-4 mb-4">
+                    <span id="kit-id-badge" class="bg-blue-100 text-blue-800 text-xs font-extrabold px-2.5 py-1 rounded-md tracking-wider">KIT-ID</span>
+                    <h2 id="kit-nom" class="text-2xl font-black text-gray-800 mt-2 leading-tight">Nom du modèle de kit</h2>
+                    <p class="text-sm text-gray-500 mt-1">📍 Emplacement actuel : <span id="kit-emplacement" class="font-bold text-gray-700">---</span></p>
+                </div>
+
+                <h3 class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">Composition Théorique à valider :</h3>
+                <div id="components-list" class="space-y-2.5 mb-6">
+                    <!-- Généré dynamiquement en JavaScript -->
+                </div>
+
+                <!-- Boutons d'enregistrements -->
+                <div class="grid grid-cols-1 gap-3">
+                    <button id="btn-valider-conforme" class="w-full bg-green-600 text-white p-4 rounded-xl font-bold shadow-md hover:bg-green-700 active:scale-[0.99] transition flex items-center justify-center gap-2 text-base">
+                        ✅ Kit Complet & Conforme
+                    </button>
+                    <button id="btn-valider-incomplet" class="w-full bg-amber-500 text-white p-3.5 rounded-xl font-bold hover:bg-amber-600 active:scale-[0.99] transition flex items-center justify-center gap-2 text-sm">
+                        ⚠️ Signaler des Éléments Manquants
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 2 : ADMIN / INJECTION EXCEL       -->
+        <!-- ========================================== -->
+        <section id="section-admin" class="space-y-4 hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h2 class="text-xl font-black text-gray-800 mb-1">Mise à jour de la Base de Données</h2>
+                <p class="text-gray-500 text-xs mb-6">Déposez un fichier global. L'application filtrera automatiquement pour ne pas écraser les fiches de kits déjà existantes.</p>
+
+                <!-- Zone Drag & Drop -->
+                <div class="border-4 border-dashed border-gray-200 rounded-2xl p-10 text-center hover:border-blue-500 hover:bg-blue-50/30 transition cursor-pointer group" id="drop-zone">
+                    <input type="file" id="file-input" accept=".xlsx, .xls, .csv" class="hidden">
+                    <label for="file-input" class="cursor-pointer block">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500 transition mb-3" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v28a4 4 0 004 4h24a4 4 0 004-4V20L28 8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <p class="text-sm text-gray-700 font-bold">Parcourir les fichiers ou glisser-déposer</p>
+                        <p class="text-xs text-gray-400 mt-1">Fichiers .xlsx ou .csv uniquement</p>
+                    </label>
+                </div>
+
+                <!-- Console de Statut d'importation -->
+                <div id="admin-status" class="mt-4 text-sm font-semibold hidden p-4 rounded-xl transition-all"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SCRIPT APPLICATION & FIREBASE -->
     <script type="module">
-        // Importation des modules officiels de Firebase depuis le CDN
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ⚠️ REMPLACEZ LES VALEURS CI-DESSOUS PAR VOS PROPRES CLÉS CONFIG FIREBASE
+        // ⚠️ REMPLACEZ AVEC VOS COORDONNÉES FIREBASE DU SITE
         const firebaseConfig = {
             apiKey: "VOTRE_API_KEY",
             authDomain: "VOTRE_PROJECT_ID.firebaseapp.com",
@@ -50,133 +116,228 @@
             appId: "VOTRE_APP_ID"
         };
 
-        // Initialisation de Firebase et de Firestore
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Liaison avec les éléments du HTML
+        // Variables d'état Globales
+        let currentEmplacementId = "";
+        let currentKitId = "";
+
+        // ÉLÉMENTS DU DOM INTERFACE
+        const tabControle = document.getElementById('tab-btn-controle');
+        const tabAdmin = document.getElementById('tab-btn-admin');
+        const secControle = document.getElementById('section-controle');
+        const secAdmin = document.getElementById('section-admin');
+
+        // ÉLÉMENTS DU DOM LOGIQUE TERRAIN
+        const inputEmplacement = document.getElementById('search-emplacement');
+        const btnRechercher = document.getElementById('btn-rechercher');
+        const searchStatus = document.getElementById('search-status');
+        const loadingDiv = document.getElementById('loading');
+        const kitCard = document.getElementById('kit-card');
+
+        // ÉLÉMENTS DU DOM LOGIQUE ADMIN
         const fileInput = document.getElementById('file-input');
-        const statusDiv = document.getElementById('status');
+        const adminStatus = document.getElementById('admin-status');
 
-        // Déclenchement de la fonction dès qu'un fichier est choisi
-        fileInput.addEventListener('change', handleFile, false);
+        // --- GESTION DU CHANGEMENT D'ONGLETS ---
+        tabControle.addEventListener('click', () => {
+            switchTabs(tabControle, tabAdmin, secControle, secAdmin);
+        });
+        tabAdmin.addEventListener('click', () => {
+            switchTabs(tabAdmin, tabControle, secAdmin, secControle);
+        });
 
-        // Fonction utilitaire pour afficher les messages à l'utilisateur
-        function showStatus(message, isError = false) {
-            statusDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
-            
-            if (isError) {
-                statusDiv.classList.add('bg-red-100', 'text-red-800');
-            } else if (message.includes("en cours") || message.includes("Vérification")) {
-                statusDiv.classList.add('bg-blue-100', 'text-blue-800');
-            } else {
-                statusDiv.classList.add('bg-green-100', 'text-green-800');
-            }
-            
-            statusDiv.classList.remove('hidden');
-            statusDiv.innerText = message;
+        function switchTabs(activeTab, inactiveTab, activeSec, inactiveSec) {
+            activeTab.classList.add('bg-blue-700', 'border-white');
+            activeTab.classList.remove('border-transparent');
+            inactiveTab.classList.remove('bg-blue-700', 'border-white');
+            inactiveTab.classList.add('border-transparent');
+            activeSec.classList.remove('hidden');
+            inactiveSec.classList.add('hidden');
         }
 
-        function handleFile(e) {
+        // ========================================================
+        // LOGIQUE : ESPACE TERRAIN (CONTRÔLEUR)
+        // ========================================================
+        btnRechercher.addEventListener('click', chargerEmplacement);
+        inputEmplacement.addEventListener('keypress', (e) => { if (e.key === 'Enter') chargerEmplacement(); });
+
+        async function chargerEmplacement() {
+            const emplacementId = inputEmplacement.value.trim().toUpperCase();
+            if (!emplacementId) return;
+
+            kitCard.classList.add('hidden');
+            searchStatus.classList.add('hidden');
+            loadingDiv.classList.remove('hidden');
+
+            try {
+                const empRef = doc(db, "emplacements", emplacementId);
+                const empSnap = await getDoc(empRef);
+
+                if (!empSnap.exists() || !empSnap.data().id_kit_stocke) {
+                    throw new Error(`L'emplacement ${emplacementId} est enregistré comme vide ou inconnu.`);
+                }
+
+                currentEmplacementId = emplacementId;
+                currentKitId = empSnap.data().id_kit_stocke;
+
+                const kitRef = doc(db, "nomenclature_kits", currentKitId);
+                const kitSnap = await getDoc(kitRef);
+
+                if (!kitSnap.exists()) {
+                    throw new Error(`La fiche technique du kit (${currentKitId}) est introuvable.`);
+                }
+
+                afficherKitEquipe(currentKitId, kitSnap.data(), emplacementId);
+            } catch (err) {
+                searchStatus.innerText = err.message;
+                searchStatus.classList.remove('hidden');
+            } finally {
+                loadingDiv.classList.add('hidden');
+            }
+        }
+
+        function afficherKitEquipe(idKit, dataKit, empId) {
+            document.getElementById('kit-id-badge').innerText = idKit;
+            document.getElementById('kit-nom').innerText = dataKit.nom_du_kit;
+            document.getElementById('kit-emplacement').innerText = empId;
+
+            const container = document.getElementById('components-list');
+            container.innerHTML = "";
+
+            dataKit.composants.forEach((comp, idx) => {
+                const label = document.createElement('label');
+                label.className = "flex items-center justify-between p-3.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer select-none active:bg-gray-100/80 transition";
+                label.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 comp-checkbox" data-idx="${idx}">
+                        <span class="font-semibold text-gray-700 text-sm">${comp.nom}</span>
+                    </div>
+                    <span class="bg-gray-200 text-gray-800 text-xs font-black px-2.5 py-1 rounded-full">Qté: ${comp.quantite_requise}</span>
+                `;
+                container.appendChild(label);
+            });
+            kitCard.classList.remove('hidden');
+        }
+
+        document.getElementById('btn-valider-conforme').addEventListener('click', () => enregistrerStatutTerrain("Conforme"));
+        document.getElementById('btn-valider-incomplet').addEventListener('click', () => enregistrerStatutTerrain("Incomplet"));
+
+        async function enregistrerStatutTerrain(validation) {
+            if (!currentEmplacementId) return;
+
+            if (validation === "Conforme") {
+                const boxes = document.querySelectorAll('.comp-checkbox');
+                const completes = Array.from(boxes).every(b => b.checked);
+                if (!completes && !confirm("Des éléments ne sont pas cochés. Valider de force comme conforme ?")) return;
+            }
+
+            try {
+                await updateDoc(doc(db, "emplacements", currentEmplacementId), {
+                    statut_conformite: validation,
+                    derniere_verification: new Date().toISOString()
+                });
+
+                alert(`Statut [${validation}] pris en compte !`);
+                kitCard.classList.add('hidden');
+                inputEmplacement.value = "";
+                inputEmplacement.focus();
+            } catch (err) {
+                alert("Impossible d'enregistrer la conformité : " + err.message);
+            }
+        }
+
+        // ========================================================
+        // LOGIQUE : ESPACE ADMIN (IMPORTATEUR EXCEL SÉCURISÉ)
+        // ========================================================
+        fileInput.addEventListener('change', traiterFichierExcel, false);
+
+        function logAdmin(msg, style = "info") {
+            adminStatus.classList.remove('hidden', 'bg-blue-50', 'text-blue-700', 'bg-green-50', 'text-green-700', 'bg-red-50', 'text-red-700');
+            if(style === "error") adminStatus.classList.add('bg-red-50', 'text-red-700');
+            else if(style === "success") adminStatus.classList.add('bg-green-50', 'text-green-700');
+            else adminStatus.classList.add('bg-blue-50', 'text-blue-700');
+            adminStatus.innerText = msg;
+            adminStatus.classList.remove('hidden');
+        }
+
+        function traiterFichierExcel(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            showStatus("Lecture du fichier Excel en cours...");
+            logAdmin("Analyse du fichier...");
             const reader = new FileReader();
 
             reader.onload = async function(e) {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    // Récupération de la première feuille du classeur Excel
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    
-                    // Conversion des lignes Excel en tableau d'objets JavaScript
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    const arrayBuffer = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const lignesExcel = XLSX.utils.sheet_to_json(sheet);
 
-                    if (jsonData.length === 0) {
-                        throw new Error("Le fichier Excel lu semble vide ou mal formaté.");
-                    }
+                    if (lignesExcel.length === 0) throw new Error("Aucune donnée exploitable trouvée.");
 
-                    showStatus("Vérification des kits déjà existants dans Firebase...");
-                    
-                    // 1. PROTECTION PLAN GRATUIT : On télécharge d'abord la liste des IDs existants (coûte très peu de quotas)
+                    logAdmin("Analyse des kits existants sur Firebase (Protection Quotas)...");
                     const querySnapshot = await getDocs(collection(db, "nomenclature_kits"));
                     const kitsExistants = new Set();
-                    
-                    querySnapshot.forEach((doc) => {
-                        kitsExistants.add(doc.id); // On stocke l'ID du kit dans notre liste de comparaison locale
-                    });
+                    querySnapshot.forEach(d => kitsExistants.add(d.id));
 
-                    showStatus("Regroupement des lignes du fichier Excel...");
-                    
-                    // 2. REGROUPEMENT LOCAL : On transforme les lignes individuelles en paquets par Kit
+                    logAdmin("Indexation et regroupement des composants...");
                     const kitsRegroupes = {};
 
-                    jsonData.forEach(ligne => {
-                        const idKit = ligne.id_kit;
-                        if (!idKit) return; // Saute la ligne si l'identifiant du kit est vide
+                    lignesExcel.forEach(l => {
+                        const idKit = l.id_kit;
+                        if (!idKit) return;
 
-                        // Si le kit n'est pas encore initialisé dans notre liste locale, on le crée
                         if (!kitsRegroupes[idKit]) {
                             kitsRegroupes[idKit] = {
-                                nom_du_kit: ligne.nom_kit || "Nom non spécifié",
-                                emplacement_theorique: ligne.emplacement || "Non assigné",
+                                nom_du_kit: l.nom_kit || "Kit sans nom",
+                                emplacement_theorique: l.emplacement || "Non assigné",
                                 composants: []
                             };
                         }
-
-                        // On ajoute le composant à la liste interne du Kit
-                        if (ligne.composant) {
+                        if (l.composant) {
                             kitsRegroupes[idKit].composants.push({
-                                nom: ligne.composant,
-                                quantite_requise: Number(ligne.quantite) || 1
+                                nom: l.composant,
+                                quantite_requise: Number(l.quantite) || 1
                             });
                         }
                     });
 
-                    // 3. ENVOI FILTRÉ VERS FIREBASE
-                    let compteurEcritures = 0;
+                    let nouveauxKitsInscrits = 0;
                     let kitsIgnores = 0;
 
                     for (const idKit in kitsRegroupes) {
-                        
-                        // 🔥 SÉCURITÉ : Si le kit existe déjà dans Firebase, on refuse de l'écrire
+                        // Sécurité demandée : Si le kit existe déjà, on refuse de l'écraser
                         if (kitsExistants.has(idKit)) {
                             kitsIgnores++;
-                            continue; // Arrête ici pour ce kit et passe immédiatement au suivant
+                            continue; 
                         }
 
-                        // Si le code arrive ici, c'est que le kit est 100% nouveau
-                        // Étape A : Création de la nomenclature du Kit
+                        // Enregistrement de la fiche descriptive
                         await setDoc(doc(db, "nomenclature_kits", idKit), kitsRegroupes[idKit]);
-                        compteurEcritures++;
-                        
-                        // Étape B : Assignation de l'emplacement du Kit
-                        const idEmplacement = kitsRegroupes[idKit].emplacement_theorique;
-                        if (idEmplacement !== "Non assigné") {
-                            await setDoc(doc(db, "emplacements", idEmplacement), {
-                                id_kit_stocke: idKit,
-                                statut: "Occupé",
-                                derniere_mise_a_jour: new Date().toISOString()
-                            }, { merge: true }); // merge: true protège les autres champs existants de l'emplacement
-                            compteurEcritures++;
-                        }
+                        nouveauxKitsInscrits++;
 
-                        showStatus(`Enregistrement : ${compteurEcritures} opérations écrites...`);
+                        // Assignation de l'emplacement lié
+                        const empId = kitsRegroupes[idKit].emplacement_theorique;
+                        if (empId !== "Non assigné") {
+                            await setDoc(doc(db, "emplacements", empId), {
+                                id_kit_stocke: idKit,
+                                statut_conformite: "Non vérifié",
+                                derniere_mise_a_jour: new Date().toISOString()
+                            }, { merge: true });
+                            nouveauxKitsInscrits++;
+                        }
                     }
 
-                    // Message final de compte-rendu
-                    showStatus(`Traitement terminé avec succès ! ${compteurEcritures} écritures utilisées pour les nouveaux kits. ${kitsIgnores} kits déjà présents ont été ignorés de manière sécurisée.`);
+                    logAdmin(`Mise à jour achevée. ${nouveauxKitsInscrits} écritures Firebase générées. ${kitsIgnores} kits de votre fichier existaient déjà et sont restés inchangés.`, "success");
 
-                } catch (error) {
-                    console.error(error);
-                    showStatus("Erreur lors de l'intégration : " + error.message, true);
+                } catch (err) {
+                    console.error(err);
+                    logAdmin("Échec de l'import : " + err.message, "error");
                 }
             };
-
             reader.readAsArrayBuffer(file);
         }
     </script>
