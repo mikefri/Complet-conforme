@@ -3,342 +3,932 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion & Contrôle des Kits - Entrepôt</title>
-    <!-- Tailwind CSS pour une interface moderne et adaptative -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Librairie XLSX pour traiter les fichiers Excel/CSV -->
+    <title>LogiKit Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-</head>
-<body class="bg-gray-100 min-h-screen font-sans antialiased text-gray-800 flex flex-col">
+    <style>
+        :root {
+            --bg:        #0d0f14;
+            --surface:   #161921;
+            --border:    #252836;
+            --border-hi: #353a50;
+            --text:      #e8eaf0;
+            --muted:     #6b7094;
+            --accent:    #4f8ef7;
+            --accent-hi: #7aaaff;
+            --green:     #2dd97a;
+            --amber:     #f5a623;
+            --red:       #f25c5c;
+            --mono:      'JetBrains Mono', monospace;
+            --sans:      'DM Sans', sans-serif;
+            --radius:    12px;
+            --radius-lg: 18px;
+        }
 
-    <!-- BARRE DE NAVIGATION (ONGLERS) -->
-    <header class="bg-blue-600 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto flex justify-between items-center px-4">
-            <h1 class="text-lg font-bold tracking-tight py-4">LogiKit Pro</h1>
-            <nav class="flex h-full">
-                <button id="tab-btn-controle" class="px-4 py-4 font-semibold border-b-4 border-white bg-blue-700 transition">
-                    📱 Terrain (Contrôle)
-                </button>
-                <button id="tab-btn-admin" class="px-4 py-4 font-semibold border-b-4 border-transparent hover:bg-blue-500 transition">
-                    ⚙️ Admin (Import)
-                </button>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── HEADER ─────────────────────────────────── */
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 560px;
+            margin: 0 auto;
+            display: flex;
+            align-items: stretch;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: var(--mono);
+            font-weight: 800;
+            font-size: .95rem;
+            color: var(--accent);
+            padding: 0 1.25rem;
+            display: flex; align-items: center; gap: .5rem;
+            letter-spacing: .05em;
+        }
+        .logo span { color: var(--muted); font-weight: 400; }
+
+        nav { display: flex; }
+
+        .tab-btn {
+            font-family: var(--sans);
+            font-size: .82rem;
+            font-weight: 700;
+            color: var(--muted);
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+            letter-spacing: .02em;
+        }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active {
+            color: var(--accent-hi);
+            border-bottom-color: var(--accent);
+        }
+
+        /* ─── MAIN ────────────────────────────────────── */
+        main {
+            flex: 1;
+            max-width: 560px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        section { display: flex; flex-direction: column; gap: 1rem; }
+        section.hidden { display: none; }
+
+        /* ─── CARDS ───────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-family: var(--mono);
+            font-size: .7rem;
+            font-weight: 700;
+            color: var(--muted);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        /* ─── SEARCH BAR ──────────────────────────────── */
+        .search-row {
+            display: flex;
+            gap: .75rem;
+        }
+
+        .search-input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: .9rem 1rem;
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            transition: border-color .15s, box-shadow .15s;
+            outline: none;
+        }
+        .search-input::placeholder { color: var(--muted); font-weight: 400; letter-spacing: 0; }
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(79,142,247,.15);
+        }
+
+        .btn-search {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            padding: 0 1.25rem;
+            font-weight: 700;
+            font-size: .85rem;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+            white-space: nowrap;
+        }
+        .btn-search:hover { background: var(--accent-hi); }
+        .btn-search:active { transform: scale(.97); }
+
+        /* ─── STATUS LINE ─────────────────────────────── */
+        .status-line {
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--red);
+            margin-top: .5rem;
+            min-height: 1.2em;
+        }
+
+        /* ─── KIT CARD ────────────────────────────────── */
+        .kit-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .kit-id-badge {
+            font-family: var(--mono);
+            font-size: .7rem;
+            font-weight: 800;
+            background: rgba(79,142,247,.12);
+            color: var(--accent-hi);
+            border: 1px solid rgba(79,142,247,.3);
+            border-radius: 6px;
+            padding: .25rem .6rem;
+            letter-spacing: .08em;
+            white-space: nowrap;
+        }
+        .kit-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-top: .4rem;
+        }
+        .kit-location {
+            font-size: .8rem;
+            color: var(--muted);
+            margin-top: .3rem;
+        }
+        .kit-location strong { color: var(--text); }
+
+        /* ─── COMPOSANTS LIST ─────────────────────────── */
+        .comp-list { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.25rem; }
+
+        .comp-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: .85rem 1rem;
+            cursor: pointer;
+            transition: border-color .15s, background .15s;
+            user-select: none;
+        }
+        .comp-item:hover { border-color: var(--border-hi); }
+        .comp-item.checked {
+            border-color: rgba(45,217,122,.35);
+            background: rgba(45,217,122,.05);
+        }
+
+        .comp-left { display: flex; align-items: center; gap: .75rem; }
+
+        .comp-checkbox-visual {
+            width: 20px; height: 20px;
+            border: 2px solid var(--border-hi);
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: background .15s, border-color .15s;
+        }
+        .comp-item.checked .comp-checkbox-visual {
+            background: var(--green);
+            border-color: var(--green);
+        }
+        .comp-checkbox-visual svg {
+            opacity: 0; transform: scale(.5);
+            transition: opacity .15s, transform .15s;
+        }
+        .comp-item.checked .comp-checkbox-visual svg { opacity: 1; transform: scale(1); }
+
+        .comp-name {
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .comp-item.checked .comp-name { color: var(--muted); text-decoration: line-through; }
+
+        .comp-qty {
+            font-family: var(--mono);
+            font-size: .75rem;
+            font-weight: 700;
+            background: var(--border);
+            color: var(--muted);
+            padding: .2rem .55rem;
+            border-radius: 99px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* ─── ACTION BUTTONS ──────────────────────────── */
+        .btn-actions { display: flex; flex-direction: column; gap: .6rem; }
+
+        .btn-action {
+            width: 100%;
+            border: none;
+            border-radius: var(--radius);
+            padding: 1rem;
+            font-family: var(--sans);
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: filter .15s, transform .1s;
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+        }
+        .btn-action:active { transform: scale(.98); }
+        .btn-conforme { background: var(--green); color: #0d1a11; }
+        .btn-conforme:hover { filter: brightness(1.1); }
+        .btn-incomplet { background: rgba(245,166,35,.15); color: var(--amber); border: 1px solid rgba(245,166,35,.3); }
+        .btn-incomplet:hover { background: rgba(245,166,35,.22); }
+
+        /* ─── PROGRESS BAR ────────────────────────────── */
+        .progress-wrap {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            height: 8px;
+            overflow: hidden;
+            margin-top: .75rem;
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 99px;
+            transition: width .3s ease;
+            width: 0%;
+        }
+        .progress-label {
+            font-family: var(--mono);
+            font-size: .72rem;
+            color: var(--muted);
+            margin-top: .4rem;
+        }
+
+        /* ─── LOADING ─────────────────────────────────── */
+        .loading-wrap {
+            display: flex; align-items: center; justify-content: center;
+            gap: .75rem;
+            padding: 2.5rem;
+            color: var(--muted);
+            font-size: .85rem;
+        }
+        .spinner {
+            width: 20px; height: 20px;
+            border: 2px solid var(--border-hi);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── ADMIN DROP ZONE ─────────────────────────── */
+        .drop-zone {
+            border: 2px dashed var(--border-hi);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+            position: relative;
+        }
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(79,142,247,.06);
+        }
+        .drop-zone input[type="file"] {
+            position: absolute; inset: 0; opacity: 0; cursor: pointer;
+        }
+        .drop-icon {
+            font-size: 2.5rem;
+            margin-bottom: .75rem;
+            display: block;
+        }
+        .drop-title {
+            font-weight: 700;
+            font-size: .95rem;
+            margin-bottom: .3rem;
+        }
+        .drop-sub {
+            font-size: .78rem;
+            color: var(--muted);
+        }
+
+        /* ─── ADMIN STATUS ────────────────────────────── */
+        .admin-status {
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius);
+            font-size: .85rem;
+            font-weight: 600;
+            display: none;
+        }
+        .admin-status.info    { background: rgba(79,142,247,.1);  color: var(--accent-hi); border: 1px solid rgba(79,142,247,.2); display: block; }
+        .admin-status.success { background: rgba(45,217,122,.1);  color: var(--green);     border: 1px solid rgba(45,217,122,.2); display: block; }
+        .admin-status.error   { background: rgba(242,92,92,.1);   color: var(--red);       border: 1px solid rgba(242,92,92,.2);  display: block; }
+
+        /* ─── OFFLINE BANNER ──────────────────────────── */
+        .offline-banner {
+            background: rgba(245,166,35,.1);
+            border: 1px solid rgba(245,166,35,.3);
+            color: var(--amber);
+            font-size: .78rem;
+            font-weight: 600;
+            padding: .6rem 1rem;
+            border-radius: var(--radius);
+            display: none;
+            align-items: center; gap: .5rem;
+        }
+        .offline-banner.visible { display: flex; }
+
+        /* ─── ANIMATIONS ──────────────────────────────── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .anim-in { animation: fadeUp .2s ease both; }
+
+        /* ─── ADMIN AUTH GATE ─────────────────────────── */
+        .auth-gate {
+            display: flex; flex-direction: column; gap: 1rem;
+            align-items: center; text-align: center;
+            padding: 2rem 1rem;
+        }
+        .auth-icon { font-size: 3rem; }
+        .auth-title { font-weight: 700; font-size: 1.1rem; }
+        .auth-sub { font-size: .82rem; color: var(--muted); max-width: 280px; }
+
+        .pin-row { display: flex; gap: .5rem; margin: .5rem 0; }
+        .pin-input {
+            width: 2.8rem; height: 3.2rem;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 1.3rem;
+            font-weight: 800;
+            background: var(--bg);
+            border: 1px solid var(--border-hi);
+            border-radius: var(--radius);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .pin-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(79,142,247,.15);
+        }
+        .pin-error { color: var(--red); font-size: .8rem; font-weight: 600; min-height: 1.2em; }
+
+        .btn-pin-validate {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            padding: .8rem 2rem;
+            font-weight: 700;
+            font-size: .9rem;
+            cursor: pointer;
+            transition: background .15s;
+        }
+        .btn-pin-validate:hover { background: var(--accent-hi); }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="header-inner">
+            <div class="logo">LOGI<span>KIT</span> PRO</div>
+            <nav>
+                <button class="tab-btn active" id="tab-terrain">📱 Terrain</button>
+                <button class="tab-btn" id="tab-admin">⚙️ Admin</button>
             </nav>
         </div>
     </header>
 
-    <!-- CONTENEUR PRINCIPAL -->
-    <main class="flex-grow max-w-xl w-full mx-auto p-4 pb-12">
+    <main>
 
-        <!-- ========================================== -->
-        <!-- SECTION 1 : TERRAIN / CONTRÔLE (PAR DÉFAUT) -->
-        <!-- ========================================== -->
-        <section id="section-controle" class="space-y-4">
-            
-            <!-- Recherche d'emplacement -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
-                <label for="search-emplacement" class="block text-sm font-bold text-gray-600 mb-2">Scanner ou Entrer l'Emplacement :</label>
-                <div class="flex gap-2">
-                    <input type="text" id="search-emplacement" placeholder="Ex: A-01-02" class="border border-gray-300 rounded-xl p-3.5 uppercase flex-grow font-bold tracking-wider text-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
-                    <button id="btn-rechercher" class="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition">Vérifier</button>
-                </div>
-                <div id="search-status" class="mt-2 text-sm font-semibold text-red-500 hidden"></div>
+        <!-- ════════════════════════════════════════════ -->
+        <!--              SECTION TERRAIN                 -->
+        <!-- ════════════════════════════════════════════ -->
+        <section id="sec-terrain">
+
+            <!-- Bannière offline -->
+            <div class="offline-banner" id="offline-banner">
+                ⚠️ Mode hors-ligne — les modifications seront synchronisées au retour du réseau.
             </div>
 
-            <!-- Chargement (Squelette visuel) -->
-            <div id="loading" class="text-center py-12 text-gray-400 font-medium hidden">
-                <span class="inline-block animate-bounce mr-2">📦</span> Recherche du kit en cours...
+            <!-- Barre de recherche -->
+            <div class="card">
+                <p class="card-title">Scanner ou saisir l'emplacement</p>
+                <div class="search-row">
+                    <input type="text" id="input-emplacement" class="search-input" placeholder="Ex: A-01-02" autocomplete="off" spellcheck="false">
+                    <button class="btn-search" id="btn-verifier">Vérifier</button>
+                </div>
+                <p class="status-line" id="search-status"></p>
             </div>
 
-            <!-- Fiche descriptive du Kit trouvé -->
-            <div id="kit-card" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hidden">
-                <div class="border-b border-gray-100 pb-4 mb-4">
-                    <span id="kit-id-badge" class="bg-blue-100 text-blue-800 text-xs font-extrabold px-2.5 py-1 rounded-md tracking-wider">KIT-ID</span>
-                    <h2 id="kit-nom" class="text-2xl font-black text-gray-800 mt-2 leading-tight">Nom du modèle de kit</h2>
-                    <p class="text-sm text-gray-500 mt-1">📍 Emplacement actuel : <span id="kit-emplacement" class="font-bold text-gray-700">---</span></p>
+            <!-- Chargement -->
+            <div class="card hidden anim-in" id="loading-card">
+                <div class="loading-wrap">
+                    <div class="spinner"></div>
+                    <span>Recherche du kit…</span>
+                </div>
+            </div>
+
+            <!-- Fiche Kit -->
+            <div class="card hidden anim-in" id="kit-card">
+                <!-- En-tête kit -->
+                <div class="kit-header">
+                    <div>
+                        <span class="kit-id-badge" id="kit-badge">—</span>
+                        <h2 class="kit-name" id="kit-nom">—</h2>
+                        <p class="kit-location">📍 Emplacement : <strong id="kit-emp">—</strong></p>
+                    </div>
                 </div>
 
-                <h3 class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">Composition Théorique à valider :</h3>
-                <div id="components-list" class="space-y-2.5 mb-6">
-                    <!-- Généré dynamiquement en JavaScript -->
-                </div>
+                <!-- Composants -->
+                <p class="card-title">Composition théorique à valider</p>
+                <div class="comp-list" id="comp-list"></div>
 
-                <!-- Boutons d'enregistrements -->
-                <div class="grid grid-cols-1 gap-3">
-                    <button id="btn-valider-conforme" class="w-full bg-green-600 text-white p-4 rounded-xl font-bold shadow-md hover:bg-green-700 active:scale-[0.99] transition flex items-center justify-center gap-2 text-base">
-                        ✅ Kit Complet & Conforme
+                <!-- Actions -->
+                <div class="btn-actions">
+                    <button class="btn-action btn-conforme" id="btn-conforme">
+                        ✅ Kit complet & conforme
                     </button>
-                    <button id="btn-valider-incomplet" class="w-full bg-amber-500 text-white p-3.5 rounded-xl font-bold hover:bg-amber-600 active:scale-[0.99] transition flex items-center justify-center gap-2 text-sm">
-                        ⚠️ Signaler des Éléments Manquants
+                    <button class="btn-action btn-incomplet" id="btn-incomplet">
+                        ⚠️ Signaler des éléments manquants
                     </button>
                 </div>
             </div>
+
         </section>
 
-        <!-- ========================================== -->
-        <!-- SECTION 2 : ADMIN / INJECTION EXCEL       -->
-        <!-- ========================================== -->
-        <section id="section-admin" class="space-y-4 hidden">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                <h2 class="text-xl font-black text-gray-800 mb-1">Mise à jour de la Base de Données</h2>
-                <p class="text-gray-500 text-xs mb-6">Déposez un fichier global. L'application filtrera automatiquement pour ne pas écraser les fiches de kits déjà existantes.</p>
+        <!-- ════════════════════════════════════════════ -->
+        <!--               SECTION ADMIN                  -->
+        <!-- ════════════════════════════════════════════ -->
+        <section id="sec-admin" class="hidden">
 
-                <!-- Zone Drag & Drop -->
-                <div class="border-4 border-dashed border-gray-200 rounded-2xl p-10 text-center hover:border-blue-500 hover:bg-blue-50/30 transition cursor-pointer group" id="drop-zone">
-                    <input type="file" id="file-input" accept=".xlsx, .xls, .csv" class="hidden">
-                    <label for="file-input" class="cursor-pointer block">
-                        <svg class="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500 transition mb-3" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                            <path d="M28 8H12a4 4 0 00-4 4v28a4 4 0 004 4h24a4 4 0 004-4V20L28 8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        <p class="text-sm text-gray-700 font-bold">Parcourir les fichiers ou glisser-déposer</p>
-                        <p class="text-xs text-gray-400 mt-1">Fichiers .xlsx ou .csv uniquement</p>
-                    </label>
+            <!-- Auth Gate (PIN) -->
+            <div class="card" id="admin-auth">
+                <div class="auth-gate">
+                    <span class="auth-icon">🔐</span>
+                    <p class="auth-title">Accès administrateur</p>
+                    <p class="auth-sub">Entrez votre code PIN à 4 chiffres pour déverrouiller les outils d'import.</p>
+                    <div class="pin-row" id="pin-row">
+                        <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                        <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                        <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                        <input class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    </div>
+                    <p class="pin-error" id="pin-error"></p>
+                    <button class="btn-pin-validate" id="btn-pin">Déverrouiller</button>
+                </div>
+            </div>
+
+            <!-- Interface admin réelle (cachée jusqu'à auth) -->
+            <div id="admin-content" class="hidden" style="display:flex;flex-direction:column;gap:1rem;">
+
+                <div class="card">
+                    <p class="card-title">Import de données — Fichier maître</p>
+                    <p style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">
+                        Déposez un fichier global (.xlsx ou .csv). Les kits déjà présents dans Firebase 
+                        <strong style="color:var(--text)">ne seront pas écrasés</strong>.
+                    </p>
+
+                    <!-- Drop Zone -->
+                    <div class="drop-zone" id="drop-zone">
+                        <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
+                        <span class="drop-icon">📂</span>
+                        <p class="drop-title">Glisser-déposer ou cliquer pour parcourir</p>
+                        <p class="drop-sub">Fichiers .xlsx ou .csv uniquement</p>
+                    </div>
+
+                    <!-- Progression -->
+                    <div id="progress-area" class="hidden" style="margin-top:1rem;">
+                        <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+                        <p class="progress-label" id="progress-label">0 / 0 kits traités…</p>
+                    </div>
+
+                    <!-- Statut -->
+                    <div class="admin-status" id="admin-status"></div>
                 </div>
 
-                <!-- Console de Statut d'importation -->
-                <div id="admin-status" class="mt-4 text-sm font-semibold hidden p-4 rounded-xl transition-all"></div>
+                <!-- Format attendu -->
+                <div class="card">
+                    <p class="card-title">Format de fichier attendu</p>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+                            <thead>
+                                <tr style="border-bottom:1px solid var(--border);">
+                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">id_kit</th>
+                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">nom_kit</th>
+                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">emplacement</th>
+                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">composant</th>
+                                    <th style="padding:.5rem .75rem;text-align:left;color:var(--muted);font-family:var(--mono);">quantite</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border);">
+                                    <td style="padding:.5rem .75rem;font-family:var(--mono);color:var(--accent-hi);">KIT-001</td>
+                                    <td style="padding:.5rem .75rem;">Kit Sécurité</td>
+                                    <td style="padding:.5rem .75rem;">A-01-02</td>
+                                    <td style="padding:.5rem .75rem;">Extincteur CO₂</td>
+                                    <td style="padding:.5rem .75rem;text-align:center;">2</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:.5rem .75rem;font-family:var(--mono);color:var(--accent-hi);">KIT-001</td>
+                                    <td style="padding:.5rem .75rem;">Kit Sécurité</td>
+                                    <td style="padding:.5rem .75rem;">A-01-02</td>
+                                    <td style="padding:.5rem .75rem;">Trousse premiers secours</td>
+                                    <td style="padding:.5rem .75rem;text-align:center;">1</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </section>
 
     </main>
 
-    <!-- SCRIPT APPLICATION & FIREBASE -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeApp }            from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, enableIndexedDbPersistence,
+                 doc, setDoc, getDoc, getDocs,
+                 collection, updateDoc }     from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ⚠️ REMPLACEZ AVEC VOS COORDONNÉES FIREBASE DU SITE
+        // ─── FIREBASE CONFIG ──────────────────────────────────────────────────
+        // ⚠️  Remplacez avec vos vraies coordonnées Firebase
         const firebaseConfig = {
-            apiKey: "VOTRE_API_KEY",
-            authDomain: "VOTRE_PROJECT_ID.firebaseapp.com",
-            projectId: "VOTRE_PROJECT_ID",
-            storageBucket: "VOTRE_PROJECT_ID.appspot.com",
+            apiKey:            "VOTRE_API_KEY",
+            authDomain:        "VOTRE_PROJECT_ID.firebaseapp.com",
+            projectId:         "VOTRE_PROJECT_ID",
+            storageBucket:     "VOTRE_PROJECT_ID.appspot.com",
             messagingSenderId: "VOTRE_SENDER_ID",
-            appId: "VOTRE_APP_ID"
+            appId:             "VOTRE_APP_ID"
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        const db  = getFirestore(app);
 
-        // Variables d'état Globales
-        let currentEmplacementId = "";
-        let currentKitId = "";
-
-        // ÉLÉMENTS DU DOM INTERFACE
-        const tabControle = document.getElementById('tab-btn-controle');
-        const tabAdmin = document.getElementById('tab-btn-admin');
-        const secControle = document.getElementById('section-controle');
-        const secAdmin = document.getElementById('section-admin');
-
-        // ÉLÉMENTS DU DOM LOGIQUE TERRAIN
-        const inputEmplacement = document.getElementById('search-emplacement');
-        const btnRechercher = document.getElementById('btn-rechercher');
-        const searchStatus = document.getElementById('search-status');
-        const loadingDiv = document.getElementById('loading');
-        const kitCard = document.getElementById('kit-card');
-
-        // ÉLÉMENTS DU DOM LOGIQUE ADMIN
-        const fileInput = document.getElementById('file-input');
-        const adminStatus = document.getElementById('admin-status');
-
-        // --- GESTION DU CHANGEMENT D'ONGLETS ---
-        tabControle.addEventListener('click', () => {
-            switchTabs(tabControle, tabAdmin, secControle, secAdmin);
-        });
-        tabAdmin.addEventListener('click', () => {
-            switchTabs(tabAdmin, tabControle, secAdmin, secControle);
-        });
-
-        function switchTabs(activeTab, inactiveTab, activeSec, inactiveSec) {
-            activeTab.classList.add('bg-blue-700', 'border-white');
-            activeTab.classList.remove('border-transparent');
-            inactiveTab.classList.remove('bg-blue-700', 'border-white');
-            inactiveTab.classList.add('border-transparent');
-            activeSec.classList.remove('hidden');
-            inactiveSec.classList.add('hidden');
+        // ─── PERSISTENCE OFFLINE ──────────────────────────────────────────────
+        try {
+            await enableIndexedDbPersistence(db);
+        } catch (err) {
+            // multi-onglets ou navigateur incompatible : non-bloquant
+            console.warn("[Offline] Persistance indisponible :", err.code);
         }
 
-        // ========================================================
-        // LOGIQUE : ESPACE TERRAIN (CONTRÔLEUR)
-        // ========================================================
-        btnRechercher.addEventListener('click', chargerEmplacement);
-        inputEmplacement.addEventListener('keypress', (e) => { if (e.key === 'Enter') chargerEmplacement(); });
+        // ─── ADMIN PIN ───────────────────────────────────────────────────────
+        // ⚠️  Changez ce PIN ou remplacez par une vraie auth Firebase
+        const ADMIN_PIN = "1234";
+
+        // ─── ÉTAT GLOBAL ─────────────────────────────────────────────────────
+        let currentEmpId = "";
+        let currentKitId = "";
+
+        // ─── REFS DOM ────────────────────────────────────────────────────────
+        const $ = id => document.getElementById(id);
+        const tabTerrain   = $('tab-terrain');
+        const tabAdmin     = $('tab-admin');
+        const secTerrain   = $('sec-terrain');
+        const secAdmin     = $('sec-admin');
+        const offlineBanner= $('offline-banner');
+        const inputEmp     = $('input-emplacement');
+        const btnVerifier  = $('btn-verifier');
+        const searchStatus = $('search-status');
+        const loadingCard  = $('loading-card');
+        const kitCard      = $('kit-card');
+        const compList     = $('comp-list');
+
+        // ─── DÉTECTION OFFLINE ────────────────────────────────────────────────
+        function updateOnlineBanner() {
+            offlineBanner.classList.toggle('visible', !navigator.onLine);
+        }
+        window.addEventListener('online',  updateOnlineBanner);
+        window.addEventListener('offline', updateOnlineBanner);
+        updateOnlineBanner();
+
+        // ─── NAVIGATION ONGLETS ───────────────────────────────────────────────
+        tabTerrain.addEventListener('click', () => showTab('terrain'));
+        tabAdmin.addEventListener('click',   () => showTab('admin'));
+
+        function showTab(tab) {
+            const isTerrain = tab === 'terrain';
+            tabTerrain.classList.toggle('active', isTerrain);
+            tabAdmin.classList.toggle('active', !isTerrain);
+            secTerrain.classList.toggle('hidden', !isTerrain);
+            secAdmin.classList.toggle('hidden', isTerrain);
+        }
+
+        // ─── LOGIQUE TERRAIN ─────────────────────────────────────────────────
+        btnVerifier.addEventListener('click', chargerEmplacement);
+        inputEmp.addEventListener('keydown', e => { if (e.key === 'Enter') chargerEmplacement(); });
 
         async function chargerEmplacement() {
-            const emplacementId = inputEmplacement.value.trim().toUpperCase();
-            if (!emplacementId) return;
+            const empId = inputEmp.value.trim().toUpperCase();
+            if (!empId) return;
 
+            // Reset UI
             kitCard.classList.add('hidden');
-            searchStatus.classList.add('hidden');
-            loadingDiv.classList.remove('hidden');
+            searchStatus.textContent = '';
+            loadingCard.classList.remove('hidden');
+            btnVerifier.disabled = true;
 
             try {
-                const empRef = doc(db, "emplacements", emplacementId);
-                const empSnap = await getDoc(empRef);
+                const empSnap = await getDoc(doc(db, "emplacements", empId));
 
                 if (!empSnap.exists() || !empSnap.data().id_kit_stocke) {
-                    throw new Error(`L'emplacement ${emplacementId} est enregistré comme vide ou inconnu.`);
+                    throw new Error(`Emplacement « ${empId} » vide ou inconnu.`);
                 }
 
-                currentEmplacementId = emplacementId;
+                currentEmpId = empId;
                 currentKitId = empSnap.data().id_kit_stocke;
 
-                const kitRef = doc(db, "nomenclature_kits", currentKitId);
-                const kitSnap = await getDoc(kitRef);
-
+                const kitSnap = await getDoc(doc(db, "nomenclature_kits", currentKitId));
                 if (!kitSnap.exists()) {
-                    throw new Error(`La fiche technique du kit (${currentKitId}) est introuvable.`);
+                    throw new Error(`Fiche technique du kit « ${currentKitId} » introuvable.`);
                 }
 
-                afficherKitEquipe(currentKitId, kitSnap.data(), emplacementId);
+                afficherKit(currentKitId, kitSnap.data(), empId);
+
             } catch (err) {
-                searchStatus.innerText = err.message;
-                searchStatus.classList.remove('hidden');
+                searchStatus.textContent = '⚠️ ' + err.message;
             } finally {
-                loadingDiv.classList.add('hidden');
+                loadingCard.classList.add('hidden');
+                btnVerifier.disabled = false;
             }
         }
 
-        function afficherKitEquipe(idKit, dataKit, empId) {
-            document.getElementById('kit-id-badge').innerText = idKit;
-            document.getElementById('kit-nom').innerText = dataKit.nom_du_kit;
-            document.getElementById('kit-emplacement').innerText = empId;
+        function afficherKit(idKit, data, empId) {
+            $('kit-badge').textContent = idKit;
+            $('kit-nom').textContent   = data.nom_du_kit;
+            $('kit-emp').textContent   = empId;
 
-            const container = document.getElementById('components-list');
-            container.innerHTML = "";
-
-            dataKit.composants.forEach((comp, idx) => {
-                const label = document.createElement('label');
-                label.className = "flex items-center justify-between p-3.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer select-none active:bg-gray-100/80 transition";
-                label.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <input type="checkbox" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 comp-checkbox" data-idx="${idx}">
-                        <span class="font-semibold text-gray-700 text-sm">${comp.nom}</span>
+            compList.innerHTML = '';
+            data.composants.forEach((comp, idx) => {
+                const item = document.createElement('div');
+                item.className = 'comp-item';
+                item.dataset.idx = idx;
+                item.innerHTML = `
+                    <div class="comp-left">
+                        <div class="comp-checkbox-visual">
+                            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <span class="comp-name">${comp.nom}</span>
                     </div>
-                    <span class="bg-gray-200 text-gray-800 text-xs font-black px-2.5 py-1 rounded-full">Qté: ${comp.quantite_requise}</span>
+                    <span class="comp-qty">× ${comp.quantite_requise}</span>
                 `;
-                container.appendChild(label);
+                item.addEventListener('click', () => item.classList.toggle('checked'));
+                compList.appendChild(item);
             });
+
             kitCard.classList.remove('hidden');
         }
 
-        document.getElementById('btn-valider-conforme').addEventListener('click', () => enregistrerStatutTerrain("Conforme"));
-        document.getElementById('btn-valider-incomplet').addEventListener('click', () => enregistrerStatutTerrain("Incomplet"));
+        // ─── ACTIONS VALIDATION ───────────────────────────────────────────────
+        $('btn-conforme').addEventListener('click', () => valider("Conforme"));
+        $('btn-incomplet').addEventListener('click', () => valider("Incomplet"));
 
-        async function enregistrerStatutTerrain(validation) {
-            if (!currentEmplacementId) return;
+        async function valider(statut) {
+            if (!currentEmpId) return;
 
-            if (validation === "Conforme") {
-                const boxes = document.querySelectorAll('.comp-checkbox');
-                const completes = Array.from(boxes).every(b => b.checked);
-                if (!completes && !confirm("Des éléments ne sont pas cochés. Valider de force comme conforme ?")) return;
+            if (statut === "Conforme") {
+                const items = compList.querySelectorAll('.comp-item');
+                const toutCoche = [...items].every(i => i.classList.contains('checked'));
+                if (!toutCoche && !confirm("Certains composants ne sont pas cochés. Valider quand même comme conforme ?")) return;
             }
 
             try {
-                await updateDoc(doc(db, "emplacements", currentEmplacementId), {
-                    statut_conformite: validation,
+                await updateDoc(doc(db, "emplacements", currentEmpId), {
+                    statut_conformite:    statut,
                     derniere_verification: new Date().toISOString()
                 });
 
-                alert(`Statut [${validation}] pris en compte !`);
+                alert(`✅ Statut « ${statut} » enregistré.`);
+
+                // Reset
                 kitCard.classList.add('hidden');
-                inputEmplacement.value = "";
-                inputEmplacement.focus();
+                inputEmp.value = '';
+                searchStatus.textContent = '';
+                currentEmpId = '';
+                currentKitId = '';
+                inputEmp.focus();
+
             } catch (err) {
-                alert("Impossible d'enregistrer la conformité : " + err.message);
+                alert('Erreur d\'enregistrement : ' + err.message);
             }
         }
 
-        // ========================================================
-        // LOGIQUE : ESPACE ADMIN (IMPORTATEUR EXCEL SÉCURISÉ)
-        // ========================================================
-        fileInput.addEventListener('change', traiterFichierExcel, false);
+        // ─── LOGIQUE ADMIN — AUTH PIN ─────────────────────────────────────────
+        const pinInputs    = document.querySelectorAll('.pin-input');
+        const pinError     = $('pin-error');
+        const adminAuth    = $('admin-auth');
+        const adminContent = $('admin-content');
 
-        function logAdmin(msg, style = "info") {
-            adminStatus.classList.remove('hidden', 'bg-blue-50', 'text-blue-700', 'bg-green-50', 'text-green-700', 'bg-red-50', 'text-red-700');
-            if(style === "error") adminStatus.classList.add('bg-red-50', 'text-red-700');
-            else if(style === "success") adminStatus.classList.add('bg-green-50', 'text-green-700');
-            else adminStatus.classList.add('bg-blue-50', 'text-blue-700');
-            adminStatus.innerText = msg;
-            adminStatus.classList.remove('hidden');
+        // Navigation auto entre champs PIN
+        pinInputs.forEach((input, i) => {
+            input.addEventListener('input', () => {
+                input.value = input.value.replace(/\D/g, '').slice(0, 1);
+                if (input.value && i < pinInputs.length - 1) pinInputs[i + 1].focus();
+            });
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Backspace' && !input.value && i > 0) pinInputs[i - 1].focus();
+            });
+        });
+
+        $('btn-pin').addEventListener('click', () => {
+            const saisi = [...pinInputs].map(i => i.value).join('');
+            if (saisi === ADMIN_PIN) {
+                adminAuth.classList.add('hidden');
+                adminContent.classList.remove('hidden');
+                adminContent.style.display = 'flex';
+                pinError.textContent = '';
+            } else {
+                pinError.textContent = 'Code incorrect. Réessayez.';
+                pinInputs.forEach(i => i.value = '');
+                pinInputs[0].focus();
+            }
+        });
+
+        // ─── LOGIQUE ADMIN — IMPORT EXCEL ─────────────────────────────────────
+        const dropZone   = $('drop-zone');
+        const fileInput  = $('file-input');
+        const adminStatus= $('admin-status');
+        const progressArea = $('progress-area');
+        const progressBar  = $('progress-bar');
+        const progressLabel= $('progress-label');
+
+        // Drag & Drop (vraiment branché cette fois)
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer?.files?.[0];
+            if (file) traiterFichier(file);
+        });
+        fileInput.addEventListener('change', e => {
+            const file = e.target.files?.[0];
+            if (file) traiterFichier(file);
+        });
+
+        function setStatus(msg, type = 'info') {
+            adminStatus.textContent = msg;
+            adminStatus.className = `admin-status ${type}`;
         }
 
-        function traiterFichierExcel(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        async function traiterFichier(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!['xlsx', 'xls', 'csv'].includes(ext)) {
+                setStatus('Format invalide. Utilisez .xlsx ou .csv uniquement.', 'error');
+                return;
+            }
 
-            logAdmin("Analyse du fichier...");
+            progressArea.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressLabel.textContent = 'Lecture du fichier…';
+            setStatus('Analyse du fichier en cours…', 'info');
+
             const reader = new FileReader();
+            reader.readAsArrayBuffer(file);
 
-            reader.onload = async function(e) {
+            reader.onerror = () => setStatus('Impossible de lire le fichier.', 'error');
+
+            reader.onload = async e => {
                 try {
-                    const arrayBuffer = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const lignesExcel = XLSX.utils.sheet_to_json(sheet);
+                    // Parse Excel / CSV
+                    const wb     = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    const sheet  = wb.Sheets[wb.SheetNames[0]];
+                    const lignes = XLSX.utils.sheet_to_json(sheet);
 
-                    if (lignesExcel.length === 0) throw new Error("Aucune donnée exploitable trouvée.");
+                    if (!lignes.length) throw new Error("Aucune donnée exploitable dans le fichier.");
 
-                    logAdmin("Analyse des kits existants sur Firebase (Protection Quotas)...");
-                    const querySnapshot = await getDocs(collection(db, "nomenclature_kits"));
-                    const kitsExistants = new Set();
-                    querySnapshot.forEach(d => kitsExistants.add(d.id));
+                    // Récupération des kits existants (anti-écrasement)
+                    setStatus('Lecture des kits existants sur Firebase…', 'info');
+                    const snap = await getDocs(collection(db, "nomenclature_kits"));
+                    const kitsExistants = new Set(snap.docs.map(d => d.id));
 
-                    logAdmin("Indexation et regroupement des composants...");
-                    const kitsRegroupes = {};
-
-                    lignesExcel.forEach(l => {
-                        const idKit = l.id_kit;
-                        if (!idKit) return;
-
-                        if (!kitsRegroupes[idKit]) {
-                            kitsRegroupes[idKit] = {
-                                nom_du_kit: l.nom_kit || "Kit sans nom",
-                                emplacement_theorique: l.emplacement || "Non assigné",
+                    // Regroupement par id_kit
+                    const kitsIndex = {};
+                    lignes.forEach(l => {
+                        const id = String(l.id_kit || '').trim();
+                        if (!id) return;
+                        if (!kitsIndex[id]) {
+                            kitsIndex[id] = {
+                                nom_du_kit:             String(l.nom_kit || 'Kit sans nom').trim(),
+                                emplacement_theorique:  String(l.emplacement || '').trim() || 'Non assigné',
                                 composants: []
                             };
                         }
-                        if (l.composant) {
-                            kitsRegroupes[idKit].composants.push({
-                                nom: l.composant,
+                        const nomComp = String(l.composant || '').trim();
+                        if (nomComp) {
+                            kitsIndex[id].composants.push({
+                                nom:               nomComp,
                                 quantite_requise: Number(l.quantite) || 1
                             });
                         }
                     });
 
-                    let nouveauxKitsInscrits = 0;
-                    let kitsIgnores = 0;
+                    const nouveauxIds = Object.keys(kitsIndex).filter(id => !kitsExistants.has(id));
+                    const ignores     = Object.keys(kitsIndex).length - nouveauxIds.length;
+                    const total       = nouveauxIds.length;
 
-                    for (const idKit in kitsRegroupes) {
-                        // Sécurité demandée : Si le kit existe déjà, on refuse de l'écraser
-                        if (kitsExistants.has(idKit)) {
-                            kitsIgnores++;
-                            continue; 
-                        }
-
-                        // Enregistrement de la fiche descriptive
-                        await setDoc(doc(db, "nomenclature_kits", idKit), kitsRegroupes[idKit]);
-                        nouveauxKitsInscrits++;
-
-                        // Assignation de l'emplacement lié
-                        const empId = kitsRegroupes[idKit].emplacement_theorique;
-                        if (empId !== "Non assigné") {
-                            await setDoc(doc(db, "emplacements", empId), {
-                                id_kit_stocke: idKit,
-                                statut_conformite: "Non vérifié",
-                                derniere_mise_a_jour: new Date().toISOString()
-                            }, { merge: true });
-                            nouveauxKitsInscrits++;
-                        }
+                    if (!total) {
+                        progressArea.classList.add('hidden');
+                        setStatus(`Rien à importer : les ${ignores} kit(s) du fichier existent déjà.`, 'info');
+                        return;
                     }
 
-                    logAdmin(`Mise à jour achevée. ${nouveauxKitsInscrits} écritures Firebase générées. ${kitsIgnores} kits de votre fichier existaient déjà et sont restés inchangés.`, "success");
+                    // Écriture progressive avec barre de progression
+                    let ecrits = 0;
+                    for (const idKit of nouveauxIds) {
+                        const data = kitsIndex[idKit];
+
+                        // Fiche nomenclature
+                        await setDoc(doc(db, "nomenclature_kits", idKit), data);
+
+                        // Emplacement associé
+                        if (data.emplacement_theorique !== 'Non assigné') {
+                            await setDoc(
+                                doc(db, "emplacements", data.emplacement_theorique),
+                                {
+                                    id_kit_stocke:        idKit,
+                                    statut_conformite:    "Non vérifié",
+                                    derniere_mise_a_jour: new Date().toISOString()
+                                },
+                                { merge: true }
+                            );
+                        }
+
+                        ecrits++;
+                        const pct = Math.round((ecrits / total) * 100);
+                        progressBar.style.width = pct + '%';
+                        progressLabel.textContent = `${ecrits} / ${total} kits traités…`;
+                        setStatus(`Import en cours… ${pct}%`, 'info');
+                    }
+
+                    progressBar.style.width = '100%';
+                    setStatus(
+                        `✅ Import terminé. ${ecrits} kit(s) ajouté(s)${ignores ? `, ${ignores} ignoré(s) car déjà présent(s)` : ''}.`,
+                        'success'
+                    );
 
                 } catch (err) {
                     console.error(err);
-                    logAdmin("Échec de l'import : " + err.message, "error");
+                    setStatus('❌ Échec de l\'import : ' + err.message, 'error');
+                } finally {
+                    fileInput.value = ''; // reset pour re-sélection du même fichier
                 }
             };
-            reader.readAsArrayBuffer(file);
         }
     </script>
 </body>
