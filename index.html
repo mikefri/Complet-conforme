@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Importateur de Kits - Entrepot</title>
-    <!-- On utilise Tailwind CSS pour le design rapide -->
+    <title>Importateur de Kits - Entrepôt</title>
+    <!-- Tailwind CSS pour un design propre et moderne -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Librairie pour lire le Excel/CSV côté client -->
+    <!-- Librairie XLSX pour lire les fichiers Excel/CSV directement dans le navigateur -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-6">
 
     <div class="bg-white p-8 rounded-xl shadow-md max-w-xl w-full">
         <h1 class="text-2xl font-bold text-gray-800 mb-2">Alimentation des Kits & Emplacements</h1>
-        <p class="text-gray-600 text-sm mb-6">Sélectionnez votre fichier Excel (.xlsx ou .csv) pour mettre à jour la base Firebase sans exploser les quotas.</p>
+        <p class="text-gray-600 text-sm mb-6">
+            Sélectionnez votre fichier Excel (.xlsx ou .csv). <br>
+            <span class="font-semibold text-blue-600">Sécurité activée :</span> L'outil ignore les kits déjà existants pour protéger vos quotas Firebase gratuits.
+        </p>
 
-        <!-- Zone de dépôt du fichier -->
+        <!-- Zone de dépôt / Sélection du fichier -->
         <div class="border-4 border-dashed border-gray-200 rounded-lg p-8 text-center hover:border-blue-500 transition cursor-pointer" id="drop-zone">
             <input type="file" id="file-input" accept=".xlsx, .xls, .csv" class="hidden">
             <label for="file-input" class="cursor-pointer">
@@ -27,17 +30,17 @@
             </label>
         </div>
 
-        <!-- Statut du traitement -->
+        <!-- Zone d'affichage du Statut (Succès / Erreur / Chargement) -->
         <div id="status" class="mt-4 text-sm font-medium hidden p-3 rounded"></div>
     </div>
 
-    <!-- Configuration et Logique Firebase -->
+    <!-- Logique Firebase (Version Web v10) -->
     <script type="module">
-        // Importation des modules Firebase requis
+        // Importation des modules officiels de Firebase depuis le CDN
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ⚠️ REMPLACEZ PAR VOS CONFIGURATIONS FIREBASE INTERNES
+        // ⚠️ REMPLACEZ LES VALEURS CI-DESSOUS PAR VOS PROPRES CLÉS CONFIG FIREBASE
         const firebaseConfig = {
             apiKey: "VOTRE_API_KEY",
             authDomain: "VOTRE_PROJECT_ID.firebaseapp.com",
@@ -47,21 +50,30 @@
             appId: "VOTRE_APP_ID"
         };
 
-        // Initialisation de Firebase
+        // Initialisation de Firebase et de Firestore
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Récupération des éléments HTML
+        // Liaison avec les éléments du HTML
         const fileInput = document.getElementById('file-input');
         const statusDiv = document.getElementById('status');
 
-        // Écouteur de changement de fichier
+        // Déclenchement de la fonction dès qu'un fichier est choisi
         fileInput.addEventListener('change', handleFile, false);
 
+        // Fonction utilitaire pour afficher les messages à l'utilisateur
         function showStatus(message, isError = false) {
-            statusDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-            statusDiv.classList.add(isError ? 'bg-red-100' : 'bg-green-100');
-            statusDiv.classList.add(isError ? 'text-red-800' : 'text-green-800');
+            statusDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
+            
+            if (isError) {
+                statusDiv.classList.add('bg-red-100', 'text-red-800');
+            } else if (message.includes("en cours") || message.includes("Vérification")) {
+                statusDiv.classList.add('bg-blue-100', 'text-blue-800');
+            } else {
+                statusDiv.classList.add('bg-green-100', 'text-green-800');
+            }
+            
+            statusDiv.classList.remove('hidden');
             statusDiv.innerText = message;
         }
 
@@ -69,7 +81,7 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            showStatus("Lecture du fichier en cours...");
+            showStatus("Lecture du fichier Excel en cours...");
             const reader = new FileReader();
 
             reader.onload = async function(e) {
@@ -77,36 +89,46 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     
-                    // On prend la première feuille du fichier Excel
+                    // Récupération de la première feuille du classeur Excel
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     
-                    // Conversion en JSON (Format: tableau d'objets)
-                    // On attend des colonnes : id_kit, nom_kit, emplacement, composant, quantite
+                    // Conversion des lignes Excel en tableau d'objets JavaScript
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-                    if(jsonData.length === 0) {
-                        throw new Error("Le fichier Excel semble vide.");
+                    if (jsonData.length === 0) {
+                        throw new Error("Le fichier Excel lu semble vide ou mal formaté.");
                     }
 
-                    showStatus("Structuration des données pour le plan gratuit...");
+                    showStatus("Vérification des kits déjà existants dans Firebase...");
                     
-                    // ÉTAPE MAGIQUE : On regroupe par Kit pour économiser les écritures
+                    // 1. PROTECTION PLAN GRATUIT : On télécharge d'abord la liste des IDs existants (coûte très peu de quotas)
+                    const querySnapshot = await getDocs(collection(db, "nomenclature_kits"));
+                    const kitsExistants = new Set();
+                    
+                    querySnapshot.forEach((doc) => {
+                        kitsExistants.add(doc.id); // On stocke l'ID du kit dans notre liste de comparaison locale
+                    });
+
+                    showStatus("Regroupement des lignes du fichier Excel...");
+                    
+                    // 2. REGROUPEMENT LOCAL : On transforme les lignes individuelles en paquets par Kit
                     const kitsRegroupes = {};
 
                     jsonData.forEach(ligne => {
                         const idKit = ligne.id_kit;
-                        if (!idKit) return; // Ignore les lignes invalides
+                        if (!idKit) return; // Saute la ligne si l'identifiant du kit est vide
 
+                        // Si le kit n'est pas encore initialisé dans notre liste locale, on le crée
                         if (!kitsRegroupes[idKit]) {
                             kitsRegroupes[idKit] = {
-                                nom_du_kit: ligne.nom_kit || "Nom inconnu",
+                                nom_du_kit: ligne.nom_kit || "Nom non spécifié",
                                 emplacement_theorique: ligne.emplacement || "Non assigné",
                                 composants: []
                             };
                         }
 
-                        // On ajoute le composant dans le tableau du Kit
+                        // On ajoute le composant à la liste interne du Kit
                         if (ligne.composant) {
                             kitsRegroupes[idKit].composants.push({
                                 nom: ligne.composant,
@@ -115,34 +137,43 @@
                         }
                     });
 
-                    // ÉTAPE D'ÉCRITURE DANS FIREBASE
+                    // 3. ENVOI FILTRÉ VERS FIREBASE
                     let compteurEcritures = 0;
-                    const totalKits = Object.keys(kitsRegroupes).length;
+                    let kitsIgnores = 0;
 
                     for (const idKit in kitsRegroupes) {
-                        // On crée ou écrase le document du Kit (1 seule écriture par Kit complet !)
-                        await setDoc(doc(db, "nomenclature_kits", idKit), kitsRegroupes[idKit]);
                         
-                        // Optionnel : On met aussi à jour l'emplacement si besoin
+                        // 🔥 SÉCURITÉ : Si le kit existe déjà dans Firebase, on refuse de l'écrire
+                        if (kitsExistants.has(idKit)) {
+                            kitsIgnores++;
+                            continue; // Arrête ici pour ce kit et passe immédiatement au suivant
+                        }
+
+                        // Si le code arrive ici, c'est que le kit est 100% nouveau
+                        // Étape A : Création de la nomenclature du Kit
+                        await setDoc(doc(db, "nomenclature_kits", idKit), kitsRegroupes[idKit]);
+                        compteurEcritures++;
+                        
+                        // Étape B : Assignation de l'emplacement du Kit
                         const idEmplacement = kitsRegroupes[idKit].emplacement_theorique;
                         if (idEmplacement !== "Non assigné") {
                             await setDoc(doc(db, "emplacements", idEmplacement), {
                                 id_kit_stocke: idKit,
-                                statut: "Occupe",
-                                derniere_verification: new Date().toISOString()
-                            }, { merge: true }); // merge: true évite d'effacer les autres données de l'emplacement
+                                statut: "Occupé",
+                                derniere_mise_a_jour: new Date().toISOString()
+                            }, { merge: true }); // merge: true protège les autres champs existants de l'emplacement
                             compteurEcritures++;
                         }
 
-                        compteurEcritures++;
-                        showStatus(`Importation : ${compteurEcritures} opérations effectuées...`);
+                        showStatus(`Enregistrement : ${compteurEcritures} opérations écrites...`);
                     }
 
-                    showStatus(`Succès ! ${totalKits} kits mis à jour en base de données (${compteurEcritures} écritures Firebase utilisées).`);
+                    // Message final de compte-rendu
+                    showStatus(`Traitement terminé avec succès ! ${compteurEcritures} écritures utilisées pour les nouveaux kits. ${kitsIgnores} kits déjà présents ont été ignorés de manière sécurisée.`);
 
                 } catch (error) {
                     console.error(error);
-                    showStatus("Erreur lors du traitement : " + error.message, true);
+                    showStatus("Erreur lors de l'intégration : " + error.message, true);
                 }
             };
 
